@@ -17,6 +17,11 @@ const sidebarItems = [
         icon: Store,
     },
     {
+        title: "戦略",
+        href: "/dashboard/strategy",
+        icon: BarChart3,
+    },
+    {
         title: "設定",
         href: "/dashboard/settings",
         icon: Settings,

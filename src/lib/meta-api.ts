@@ -147,12 +147,14 @@ export const metaApiServer = {
 
 // Original client-side API (uses localStorage)
 export const metaApi = {
-    getAdAccounts: async () => {
+    getAdAccounts: async (accessToken?: string) => {
         const creds = getCredentials()
-        if (creds) {
+        const token = accessToken || creds?.token
+
+        if (token) {
             try {
                 const res = await fetch(
-                    `https://graph.facebook.com/v18.0/me/adaccounts?fields=id,name,currency,account_status&access_token=${creds.token}`
+                    `https://graph.facebook.com/v18.0/me/adaccounts?fields=id,name,currency,account_status&access_token=${token}`
                 )
                 const data = await res.json()
                 if (data.error) throw new Error(data.error.message)
@@ -166,13 +168,15 @@ export const metaApi = {
         return MOCK_AD_ACCOUNTS
     },
 
-    getCampaigns: async (adAccountId: string) => {
+    getCampaigns: async (adAccountId: string, accessToken?: string) => {
         const creds = getCredentials()
-        if (creds) {
+        const token = accessToken || creds?.token
+
+        if (token) {
             try {
                 console.log(`🔍 [Meta API] Fetching campaigns for account: ${adAccountId}`)
                 const res = await fetch(
-                    `https://graph.facebook.com/v18.0/${adAccountId}/campaigns?fields=id,name,objective,status,created_time&access_token=${creds.token}`
+                    `https://graph.facebook.com/v18.0/${adAccountId}/campaigns?fields=id,name,objective,status,created_time&access_token=${token}`
                 )
                 const data = await res.json()
                 if (data.error) throw new Error(data.error.message)

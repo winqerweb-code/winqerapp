@@ -6,6 +6,7 @@ import { useParams } from "next/navigation"
 import { getStore, updateStore } from "@/app/actions/store"
 import { useToast } from "@/components/ui/use-toast"
 import { Store } from "@/types/store"
+import { useStore } from "@/contexts/store-context"
 
 // Components
 import { StoreHeader } from "@/components/dashboard/store/store-header"
@@ -16,6 +17,7 @@ export default function StorePage() {
     const params = useParams<{ id: string }>()
     const storeId = Array.isArray(params.id) ? params.id[0] : params.id
     const { toast } = useToast()
+    const { setSelectedStore } = useStore()
 
     // Store Data
     const [store, setStore] = useState<Store | null>(null)
@@ -60,7 +62,7 @@ export default function StorePage() {
             if (metaToken) {
                 try {
                     const { metaApi } = await import('@/lib/meta-api')
-                    const accounts = await metaApi.getAdAccounts()
+                    const accounts = await metaApi.getAdAccounts(metaToken)
                     console.log('📊 [Meta Fetch] Ad Accounts:', accounts, 'Count:', accounts?.length)
 
                     if (accounts && accounts.length > 0) {
@@ -108,7 +110,7 @@ export default function StorePage() {
                 try {
                     const { metaApi } = await import('@/lib/meta-api')
                     console.log('🔍 [Campaign Fetch] Fetching for account:', selectedAdAccountId)
-                    const fetchedCampaigns = await metaApi.getCampaigns(selectedAdAccountId)
+                    const fetchedCampaigns = await metaApi.getCampaigns(selectedAdAccountId, metaToken)
                     setCampaigns(fetchedCampaigns || [])
                 } catch (error) {
                     console.error('❌ [Campaign Fetch] Error:', error)
@@ -129,6 +131,7 @@ export default function StorePage() {
                 if (result.success && result.store) {
                     console.log('✅ [Store] Data loaded:', result.store)
                     setStore(result.store)
+                    setSelectedStore(result.store) // Update global context
                     setName(result.store.name || "")
                     setAddress(result.store.address || "")
                     setPhone(result.store.phone || "")
