@@ -54,7 +54,7 @@ export function AIAnalysis({
 }: AIAnalysisProps) {
     console.log('🤖 [AIAnalysis] Rendered with:', { industry, region })
     return (
-        <Card className="border-purple-200 bg-purple-50/30">
+        <Card className="h-full">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Brain className="h-5 w-5 text-purple-600" />
