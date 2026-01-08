@@ -139,6 +139,8 @@ export default function StoreDashboardPage() {
                         dateRange && dateRange.from && dateRange.to ? { from: dateRange.from, to: dateRange.to } : undefined
                     )
 
+
+
                     if (chartResult.success && chartResult.data) {
                         setChartData(chartResult.data)
                     }

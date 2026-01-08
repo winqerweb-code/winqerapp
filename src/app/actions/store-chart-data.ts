@@ -1,5 +1,6 @@
 'use server'
 
+import { cookies } from 'next/headers'
 import { MOCK_ADS } from '@/lib/mock-data'
 import { metaApiServer } from '@/lib/meta-api'
 import { googleApi } from '@/lib/google-api'
@@ -47,6 +48,13 @@ export async function getStoreChartData(
 
     // 2. Get Tokens
     let effectiveMetaToken = metaAccessToken
+
+    // Fallback to Cookie for Google Token
+    let effectiveGoogleToken = accessToken
+    if (!effectiveGoogleToken) {
+        const cookieStore = cookies()
+        effectiveGoogleToken = cookieStore.get('google_access_token')?.value
+    }
     if (!effectiveMetaToken) {
         const result = await getMetaToken()
         if (result.success && result.token) {
@@ -141,15 +149,17 @@ export async function getStoreChartData(
             ]
         }
 
-        if (accessToken && ga4PropertyId) {
+        if (effectiveGoogleToken && ga4PropertyId) {
             const { GoogleApiClient } = await import('@/lib/google-api')
-            const googleClient = new GoogleApiClient(accessToken)
+            const googleClient = new GoogleApiClient(effectiveGoogleToken)
 
             // Current Period GA4 Daily Events
-            dailyGa4 = await googleClient.getDailyGa4EventCount(ga4PropertyId, cvEventName, dateParams)
+            const searchString = "予約"
+            console.log('🔍 [StoreChartData] Fetching events containing:', searchString)
+            dailyGa4 = await googleClient.getDailyGa4EventsContaining(ga4PropertyId, searchString, dateParams)
 
             // Previous Period GA4 Daily Events
-            prevDailyGa4 = await googleClient.getDailyGa4EventCount(ga4PropertyId, cvEventName, prevDateParams)
+            prevDailyGa4 = await googleClient.getDailyGa4EventsContaining(ga4PropertyId, searchString, prevDateParams)
 
             // Fetch GA4 Report for Sessions
             ga4Report = await googleClient.getGa4Report(ga4PropertyId, dateParams)

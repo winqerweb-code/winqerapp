@@ -1,6 +1,7 @@
 'use server'
 
 import { MOCK_ADS, MOCK_GA4_REPORT } from '@/lib/mock-data'
+import { cookies } from 'next/headers'
 
 // Helper to format date in JST (YYYY-MM-DD)
 function formatJST(date: Date): string {
@@ -25,6 +26,13 @@ export async function getStoreMetrics(
     // Use JST to ensure "today" is today in Japan
     const endDate = dateRange?.to ? formatJST(dateRange.to) : formatJST(new Date())
     const startDate = dateRange?.from ? formatJST(dateRange.from) : formatJST(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
+
+    // Fallback to Cookie for Google Token
+    let effectiveGoogleToken = accessToken
+    if (!effectiveGoogleToken) {
+        const cookieStore = cookies()
+        effectiveGoogleToken = cookieStore.get('google_access_token')?.value
+    }
 
     // 1. Fetch Meta Ads Data
     let metaMetrics = {
@@ -134,16 +142,20 @@ export async function getStoreMetrics(
     let dailyGa4: any[] = []
 
     try {
-        if (accessToken && ga4PropertyId) {
+        if (effectiveGoogleToken && ga4PropertyId) {
             const { GoogleApiClient } = await import('@/lib/google-api')
-            const googleClient = new GoogleApiClient(accessToken)
+            const googleClient = new GoogleApiClient(effectiveGoogleToken)
 
-            // Fetch Total
-            const eventCount = await googleClient.getGa4EventCount(ga4PropertyId, cvEventName, { startDate, endDate })
+            // Fetch Total for "予約" (Reservation) related events
+            // User Request: "conversionsをアナリティクスの予約ってつくイベントの合計にして"
+            const searchString = "予約"
+            console.log('🔍 [StoreMetrics] Fetching events containing:', searchString)
+            const eventCount = await googleClient.getGa4EventsContaining(ga4PropertyId, searchString, { startDate, endDate })
+            console.log('✅ [StoreMetrics] Event count for "予約":', eventCount)
             ga4Metrics.specificEventCount = eventCount
 
             // Fetch Daily
-            dailyGa4 = await googleClient.getDailyGa4EventCount(ga4PropertyId, cvEventName, { startDate, endDate })
+            dailyGa4 = await googleClient.getDailyGa4EventsContaining(ga4PropertyId, searchString, { startDate, endDate })
         } else if (ga4PropertyId) {
             // Mock Data
             ga4Metrics.specificEventCount = 0
@@ -188,7 +200,7 @@ export async function getStoreMetrics(
             ctr: ctr,
             cvr: cvr,
             cvCount: cvCount,
-            cvEventName: cvEventName
+            cvEventName: '予約(合計)'
         }
     }
 }

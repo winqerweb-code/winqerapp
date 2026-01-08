@@ -373,6 +373,137 @@ export class GoogleApiClient {
             return []
         }
     }
+
+    // GA4: Get Events Containing String Count
+    async getGa4EventsContaining(propertyId: string, searchString: string, dateRange: { startDate: string, endDate: string }) {
+        if (!this.accessToken) {
+            console.log(`Google API: Using Mock GA4 Event Count (Contains ${searchString})`)
+            return 0
+        }
+
+        console.log(`📊 [GA4] Fetching events containing: ${searchString}`, dateRange)
+
+        try {
+            const cleanPropertyId = propertyId.replace('properties/', '')
+            const url = `https://analyticsdata.googleapis.com/v1beta/properties/${cleanPropertyId}:runReport`
+
+            const body = {
+                dateRanges: [
+                    { startDate: dateRange.startDate, endDate: dateRange.endDate }
+                ],
+                metrics: [
+                    { name: 'eventCount' }
+                ],
+                dimensionFilter: {
+                    filter: {
+                        fieldName: 'eventName',
+                        stringFilter: {
+                            value: searchString,
+                            matchType: 'CONTAINS'
+                        }
+                    }
+                }
+            }
+
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${this.accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            })
+
+            if (!res.ok) {
+                const errorBody = await res.text()
+                console.error('Google API Error (GA4 Event Contains):', res.status, errorBody)
+                throw new Error(`Failed to fetch GA4 event contains: ${res.status}`)
+            }
+
+            const data = await res.json()
+
+            if (data.rows && data.rows.length > 0) {
+                return parseInt(data.rows[0].metricValues[0].value) || 0
+            }
+
+            return 0
+
+        } catch (e) {
+            console.warn("Google API Error (GA4 Event Contains):", e)
+            return 0
+        }
+    }
+
+    // GA4: Get Daily Events Containing String
+    async getDailyGa4EventsContaining(propertyId: string, searchString: string, dateRange: { startDate: string, endDate: string }) {
+        if (!this.accessToken) {
+            return []
+        }
+
+        try {
+            const cleanPropertyId = propertyId.replace('properties/', '')
+            const url = `https://analyticsdata.googleapis.com/v1beta/properties/${cleanPropertyId}:runReport`
+
+            const body = {
+                dateRanges: [
+                    { startDate: dateRange.startDate, endDate: dateRange.endDate }
+                ],
+                dimensions: [
+                    { name: 'date' }
+                ],
+                metrics: [
+                    { name: 'eventCount' }
+                ],
+                dimensionFilter: {
+                    filter: {
+                        fieldName: 'eventName',
+                        stringFilter: {
+                            value: searchString,
+                            matchType: 'CONTAINS'
+                        }
+                    }
+                },
+                orderBys: [
+                    { dimension: { dimensionName: 'date' } }
+                ]
+            }
+
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${this.accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            })
+
+            if (!res.ok) {
+                const errorBody = await res.text()
+                console.error('Google API Error (GA4 Daily Event Contains):', res.status, errorBody)
+                throw new Error(`Failed to fetch GA4 daily event contains: ${res.status}`)
+            }
+
+            const data = await res.json()
+
+            if (data.rows && data.rows.length > 0) {
+                return data.rows.map((row: any) => {
+                    const dateStr = row.dimensionValues[0].value
+                    const formattedDate = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`
+
+                    return {
+                        date: formattedDate,
+                        count: parseInt(row.metricValues[0].value) || 0
+                    }
+                })
+            }
+
+            return []
+
+        } catch (e) {
+            console.warn("Google API Error (GA4 Daily Event Contains):", e)
+            return []
+        }
+    }
 }
 
 export const googleApi = new GoogleApiClient()

@@ -61,7 +61,7 @@ const INITIAL_STATE: StrategyInput = {
     brand: { ng_expressions: "", desired_image: "" },
 }
 
-export default function StrategyPage() {
+export function StrategyView() {
     const { selectedStore } = useStore()
     const [formData, setFormData] = useState<StrategyInput>(INITIAL_STATE)
     const [loading, setLoading] = useState(false)
@@ -84,10 +84,13 @@ export default function StrategyPage() {
                 if (success && strategy) {
                     setFormData(strategy.input_data)
                     setResult(strategy.output_data)
+                    // Optional toast - might be annoying if switching tabs frequently
+                    /*
                     toast({
                         title: "戦略を読み込みました",
                         description: "保存された戦略データを表示します。",
                     })
+                    */
                 } else {
                     // No strategy found, reset form but keep store context
                     setFormData(INITIAL_STATE)
@@ -209,15 +212,15 @@ export default function StrategyPage() {
     }
 
     return (
-        <div className="container mx-auto py-8 max-w-4xl space-y-8">
+        <div className="container mx-auto py-4 max-w-4xl space-y-8">
             <div className="space-y-2">
-                <h1 className="text-3xl font-bold">広告戦略AIツール</h1>
-                <p className="text-muted-foreground">
+                <h2 className="text-xl font-bold">広告戦略AI設定</h2>
+                <p className="text-muted-foreground text-sm">
                     あなたのビジネス情報をもとに、プロレベルの広告戦略を自動生成します。
                 </p>
                 {!selectedStore && (
                     <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md text-sm">
-                        ⚠️ 店舗が選択されていません。戦略を保存するには、ヘッダーから店舗を選択してください。
+                        ⚠️ 店舗が選択されていません。戦略をより正確に生成するには、ヘッダーから店舗を選択してください。
                     </div>
                 )}
             </div>
@@ -233,7 +236,7 @@ export default function StrategyPage() {
                     <CardContent className="grid gap-4">
                         <div className="grid gap-2">
                             <Label>Q1. 今回の集客で一番増やしたいのはどれですか？（1つ）</Label>
-                            <Select onValueChange={(val) => handleInputChange('goal', 'main_objective', val)}>
+                            <Select value={formData.goal.main_objective} onValueChange={(val) => handleInputChange('goal', 'main_objective', val)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="選択してください" />
                                 </SelectTrigger>
@@ -246,7 +249,7 @@ export default function StrategyPage() {
                         </div>
                         <div className="grid gap-2">
                             <Label>Q2. 月に新規で、何人くらい増えたら理想ですか？</Label>
-                            <Select onValueChange={(val) => handleInputChange('goal', 'monthly_new_customers', val)}>
+                            <Select value={formData.goal.monthly_new_customers} onValueChange={(val) => handleInputChange('goal', 'monthly_new_customers', val)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="選択してください" />
                                 </SelectTrigger>
@@ -272,6 +275,7 @@ export default function StrategyPage() {
                             <Label>Q3. 今回、特に案内したいメニューは何ですか？</Label>
                             <Input
                                 placeholder="例：プレミアムフェイシャル"
+                                value={formData.product.menu_name}
                                 onChange={(e) => handleInputChange('product', 'menu_name', e.target.value)}
                             />
                         </div>
@@ -280,6 +284,7 @@ export default function StrategyPage() {
                                 <Label>Q4. 初回価格</Label>
                                 <Input
                                     placeholder="例：5000"
+                                    value={formData.product.price_first}
                                     onChange={(e) => handleInputChange('product', 'price_first', e.target.value)}
                                 />
                             </div>
@@ -287,13 +292,14 @@ export default function StrategyPage() {
                                 <Label>通常価格</Label>
                                 <Input
                                     placeholder="例：10000"
+                                    value={formData.product.price_normal}
                                     onChange={(e) => handleInputChange('product', 'price_normal', e.target.value)}
                                 />
                             </div>
                         </div>
                         <div className="grid gap-2">
                             <Label>Q5. 提供形式</Label>
-                            <Select onValueChange={(val) => handleInputChange('product', 'format', val)}>
+                            <Select value={formData.product.format} onValueChange={(val) => handleInputChange('product', 'format', val)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="選択してください" />
                                 </SelectTrigger>
@@ -306,7 +312,7 @@ export default function StrategyPage() {
                         </div>
                         <div className="grid gap-2">
                             <Label>Q6. 基本的な利用形態</Label>
-                            <Select onValueChange={(val) => handleInputChange('product', 'usage_type', val)}>
+                            <Select value={formData.product.usage_type} onValueChange={(val) => handleInputChange('product', 'usage_type', val)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="選択してください" />
                                 </SelectTrigger>
@@ -330,6 +336,7 @@ export default function StrategyPage() {
                             <Label>Q7. 月に新規で対応できる最大人数は何人ですか？</Label>
                             <Input
                                 placeholder="例：10"
+                                value={formData.constraints.max_capacity}
                                 onChange={(e) => handleInputChange('constraints', 'max_capacity', e.target.value)}
                             />
                         </div>
@@ -352,6 +359,7 @@ export default function StrategyPage() {
                             <Label>Q9. 正直、集めたくないお客様のタイプはありますか？</Label>
                             <Input
                                 placeholder="例：安さ目的、無断キャンセルが多い など"
+                                value={formData.constraints.unwanted_customer_types}
                                 onChange={(e) => handleInputChange('constraints', 'unwanted_customer_types', e.target.value)}
                             />
                         </div>
@@ -368,6 +376,7 @@ export default function StrategyPage() {
                             <Label>Q10. 初めての方からよく聞かれる質問は何ですか？（最大3つ）</Label>
                             <Textarea
                                 placeholder="・痛くないですか？&#13;&#10;・時間はどれくらいかかりますか？"
+                                value={formData.customer_voice.frequent_questions}
                                 onChange={(e) => handleInputChange('customer_voice', 'frequent_questions', e.target.value)}
                             />
                         </div>
@@ -375,6 +384,7 @@ export default function StrategyPage() {
                             <Label>Q11. 来店前によく不安に思われていることは何ですか？</Label>
                             <Textarea
                                 placeholder="例：熱そう／恥ずかしい／効果が分からない"
+                                value={formData.customer_voice.pre_visit_anxieties}
                                 onChange={(e) => handleInputChange('customer_voice', 'pre_visit_anxieties', e.target.value)}
                             />
                         </div>
@@ -382,12 +392,13 @@ export default function StrategyPage() {
                             <Label>Q12. 実際に来店された決め手になった理由は何ですか？</Label>
                             <Textarea
                                 placeholder="例：家から近い、口コミが良い"
+                                value={formData.customer_voice.deciding_factors}
                                 onChange={(e) => handleInputChange('customer_voice', 'deciding_factors', e.target.value)}
                             />
                         </div>
                         <div className="grid gap-2">
                             <Label>Q13. 断られるときに多い理由はどれですか？</Label>
-                            <Select onValueChange={(val) => handleInputChange('customer_voice', 'refusal_reasons', val)}>
+                            <Select value={formData.customer_voice.refusal_reasons} onValueChange={(val) => handleInputChange('customer_voice', 'refusal_reasons', val)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="選択してください" />
                                 </SelectTrigger>
@@ -428,6 +439,7 @@ export default function StrategyPage() {
                             <Label>Q15. それらと比べて「ここは違う」と思う点は何ですか？</Label>
                             <Textarea
                                 placeholder="うまく書けなくてOK"
+                                value={formData.comparison.differentiation_points}
                                 onChange={(e) => handleInputChange('comparison', 'differentiation_points', e.target.value)}
                             />
                         </div>
@@ -442,7 +454,7 @@ export default function StrategyPage() {
                     <CardContent className="grid gap-4">
                         <div className="grid gap-2">
                             <Label>Q16. 広告や発信に使えそうな素材はありますか？</Label>
-                            <Select onValueChange={(val) => handleInputChange('assets', 'available_assets', val)}>
+                            <Select value={formData.assets.available_assets} onValueChange={(val) => handleInputChange('assets', 'available_assets', val)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="選択してください" />
                                 </SelectTrigger>
@@ -471,7 +483,7 @@ export default function StrategyPage() {
                         </div>
                         <div className="grid gap-2">
                             <Label>Q18. 文章を書くのはどれくらい得意ですか？</Label>
-                            <Select onValueChange={(val) => handleInputChange('assets', 'writing_skill', val)}>
+                            <Select value={formData.assets.writing_skill} onValueChange={(val) => handleInputChange('assets', 'writing_skill', val)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="選択してください" />
                                 </SelectTrigger>
@@ -495,12 +507,13 @@ export default function StrategyPage() {
                             <Label>Q19. 絶対にやりたくない広告表現はありますか？</Label>
                             <Input
                                 placeholder="例：安売り／煽り／派手 など"
+                                value={formData.brand.ng_expressions}
                                 onChange={(e) => handleInputChange('brand', 'ng_expressions', e.target.value)}
                             />
                         </div>
                         <div className="grid gap-2">
                             <Label>Q20. 将来的に、どんな存在として選ばれたいですか？</Label>
-                            <Select onValueChange={(val) => handleInputChange('brand', 'desired_image', val)}>
+                            <Select value={formData.brand.desired_image} onValueChange={(val) => handleInputChange('brand', 'desired_image', val)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="選択してください" />
                                 </SelectTrigger>
@@ -734,4 +747,3 @@ export default function StrategyPage() {
         </div>
     )
 }
-

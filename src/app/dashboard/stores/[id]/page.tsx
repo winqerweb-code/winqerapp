@@ -7,11 +7,18 @@ import { getStore, updateStore } from "@/app/actions/store"
 import { useToast } from "@/components/ui/use-toast"
 import { Store } from "@/types/store"
 import { useStore } from "@/contexts/store-context"
+import { getStrategy } from "@/app/actions/strategy"
 
 // Components
 import { StoreHeader } from "@/components/dashboard/store/store-header"
 import { StoreSettings } from "@/components/dashboard/store/store-settings"
 import { Integrations } from "@/components/dashboard/store/integrations"
+import { PostGeneration } from "@/components/dashboard/store/post-generation"
+import { StrategyView } from "@/components/dashboard/store/strategy-view"
+
+// UI
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Sparkles, Settings, Target } from "lucide-react"
 
 export default function StorePage() {
     const params = useParams<{ id: string }>()
@@ -21,9 +28,10 @@ export default function StorePage() {
 
     // Store Data
     const [store, setStore] = useState<Store | null>(null)
+    const [strategyData, setStrategyData] = useState<any>(null)
     const [loading, setLoading] = useState(false)
 
-    // Form State
+    // Form State (for Settings Tab)
     const [name, setName] = useState("")
     const [address, setAddress] = useState("")
     const [phone, setPhone] = useState("")
@@ -42,78 +50,53 @@ export default function StorePage() {
     const [initialBudget, setInitialBudget] = useState<string>("")
     const [cvEventName, setCvEventName] = useState<string>("フッター予約リンク")
     const [industry, setIndustry] = useState<string>("")
+    const [remarks, setRemarks] = useState<string>("") // Added missing state
 
+    // Fetch Meta Assets logic (Refactored to minimize duplication, keeping it inside effect for now)
     useEffect(() => {
-        // Fetch Meta Ad Accounts
         const fetchMetaAssets = async () => {
             let metaToken = localStorage.getItem('meta_access_token')
-
-            // Try to get token from DB if not provided
             if (!metaToken) {
                 const { getMetaToken } = await import('@/app/actions/user-settings')
                 const result = await getMetaToken()
-                if (result.success && result.token) {
-                    metaToken = result.token
-                }
+                if (result.success && result.token) metaToken = result.token
             }
-
-            console.log('🔍 [Meta Fetch] Starting...', { metaToken: metaToken ? 'EXISTS' : 'MISSING' })
 
             if (metaToken) {
                 try {
                     const { metaApi } = await import('@/lib/meta-api')
                     const accounts = await metaApi.getAdAccounts(metaToken)
-                    console.log('📊 [Meta Fetch] Ad Accounts:', accounts, 'Count:', accounts?.length)
-
                     if (accounts && accounts.length > 0) {
-                        // Only set default if no account is currently selected
                         if (!selectedAdAccountId) {
-                            // Prioritize specific account for this user
                             const targetId = "864591462413204"
                             const targetAccount = accounts.find((a: any) => a.id === targetId || a.id === `act_${targetId}`)
-
-                            if (targetAccount) {
-                                setSelectedAdAccountId(targetAccount.id)
-                                console.log('📌 [Meta] Set prioritized account:', targetAccount.name, targetAccount.id)
-                            } else {
-                                const defaultAccount = accounts[0]
-                                setSelectedAdAccountId(defaultAccount.id)
-                                console.log('📌 [Meta] Set default account:', defaultAccount.name, defaultAccount.id)
-                            }
+                            setSelectedAdAccountId(targetAccount ? targetAccount.id : accounts[0].id)
                         }
                     }
                 } catch (error) {
-                    console.error('❌ [Meta Fetch] Error:', error)
+                    console.error('Meta Fetch Error:', error)
                 }
             }
         }
         fetchMetaAssets()
     }, [])
 
-    // Fetch Campaigns when Ad Account changes
     useEffect(() => {
         const fetchCampaigns = async () => {
             if (!selectedAdAccountId) return
-
             let metaToken = localStorage.getItem('meta_access_token')
-
-            // Try to get token from DB if not provided
             if (!metaToken) {
                 const { getMetaToken } = await import('@/app/actions/user-settings')
                 const result = await getMetaToken()
-                if (result.success && result.token) {
-                    metaToken = result.token
-                }
+                if (result.success && result.token) metaToken = result.token
             }
 
             if (metaToken) {
                 try {
                     const { metaApi } = await import('@/lib/meta-api')
-                    console.log('🔍 [Campaign Fetch] Fetching for account:', selectedAdAccountId)
                     const fetchedCampaigns = await metaApi.getCampaigns(selectedAdAccountId, metaToken)
                     setCampaigns(fetchedCampaigns || [])
                 } catch (error) {
-                    console.error('❌ [Campaign Fetch] Error:', error)
                     setCampaigns([])
                 }
             }
@@ -122,57 +105,52 @@ export default function StorePage() {
     }, [selectedAdAccountId])
 
     useEffect(() => {
-        // Fetch store data from persistence
-        const fetchStore = async () => {
+        const fetchStoreAndStrategy = async () => {
             if (!storeId) return
             try {
-                console.log('📥 [Store] Fetching store data for:', storeId)
+                // 1. Fetch Store
                 const result = await getStore(storeId)
                 if (result.success && result.store) {
-                    console.log('✅ [Store] Data loaded:', result.store)
                     setStore(result.store)
-                    setSelectedStore(result.store) // Update global context
+                    setSelectedStore(result.store)
+
+                    // Hydrate Form
                     setName(result.store.name || "")
                     setAddress(result.store.address || "")
                     setPhone(result.store.phone || "")
-
-                    // Restore integration settings
-                    if (result.store.meta_campaign_id) setMetaCampaignId(result.store.meta_campaign_id)
-                    if (result.store.ga4_property_id) setGa4PropertyId(result.store.ga4_property_id)
-                    if (result.store.gbp_location_id) setGbpLocationId(result.store.gbp_location_id)
+                    setMetaCampaignId(result.store.meta_campaign_id || "none")
+                    setGa4PropertyId(result.store.ga4_property_id || "")
+                    setGbpLocationId(result.store.gbp_location_id || "")
                     if (result.store.meta_ad_account_id) setSelectedAdAccountId(result.store.meta_ad_account_id)
-                    if (result.store.cv_event_name) setCvEventName(result.store.cv_event_name)
-
-                    // Restore analysis inputs
-                    if (result.store.target_audience) setTargetAudience(result.store.target_audience)
-                    if (result.store.initial_budget) setInitialBudget(result.store.initial_budget)
+                    setCvEventName(result.store.cv_event_name || "")
+                    setTargetAudience(result.store.target_audience || "")
+                    setInitialBudget(result.store.initial_budget || "")
+                    setIndustry(result.store.industry || "")
                 }
+
+                // 2. Fetch Strategy (for Post Generation Context)
+                const strategyRes = await getStrategy(storeId)
+                if (strategyRes.success && strategyRes.strategy) {
+                    setStrategyData(strategyRes.strategy)
+                }
+
             } catch (error) {
-                console.error('Failed to fetch store:', error)
                 toast({
                     title: "エラー",
-                    description: "店舗情報の取得に失敗しました。",
+                    description: "データの取得に失敗しました。",
                     variant: "destructive",
                 })
             }
         }
-        fetchStore()
-    }, [storeId, toast])
-
+        fetchStoreAndStrategy()
+    }, [storeId, toast, setSelectedStore])
 
 
     const handleSave = async () => {
         if (!storeId) return
         setLoading(true)
         try {
-            // Find names for selected IDs
             const selectedCampaign = campaigns.find(c => c.id === metaCampaignId)
-            // Note: GA4 properties are not in state here, might need to fetch or pass them from Integrations component if we want name.
-            // For now, let's just save the IDs and rely on ID for logic.
-            // But wait, user asked to save names.
-            // I need to get the name. The Integrations component has the list.
-            // I should probably move the state up or just save IDs for now and names if available.
-
             const updatedStore = await updateStore(storeId, {
                 name,
                 address,
@@ -208,53 +186,88 @@ export default function StorePage() {
         }
     }
 
-
-
     if (!storeId) return <div>Invalid Store ID</div>
 
     return (
-        <div className="flex-1 space-y-4 p-6 pt-6">
+        <div className="flex-1 space-y-4 p-6 pt-6 bg-slate-50/50 min-h-screen">
             <StoreHeader name={name} storeId={storeId} />
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                {/* Left Column: Settings */}
-                <div className="col-span-7 lg:col-span-4 space-y-4">
-                    <StoreSettings
-                        store={store!}
-                        name={name}
-                        setName={setName}
-                        address={address}
-                        setAddress={setAddress}
-                        phone={phone}
-                        setPhone={setPhone}
-                        targetAudience={targetAudience}
-                        setTargetAudience={setTargetAudience}
-                        initialBudget={initialBudget}
-                        setInitialBudget={setInitialBudget}
-                        industry={industry}
-                        setIndustry={setIndustry}
-                        onSave={handleSave}
-                        loading={loading}
-                    />
-                </div>
+            <Tabs defaultValue="post-gen" className="space-y-4">
+                <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+                    <TabsTrigger value="post-gen" className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4" />
+                        投稿生成
+                    </TabsTrigger>
+                    <TabsTrigger value="strategy" className="flex items-center gap-2">
+                        <Target className="h-4 w-4" />
+                        戦略設定
+                    </TabsTrigger>
 
-                {/* Right Column: Integrations */}
-                <div className="col-span-7 lg:col-span-3 space-y-4">
-                    <Integrations
-                        metaCampaignId={metaCampaignId}
-                        setMetaCampaignId={setMetaCampaignId}
-                        campaigns={campaigns}
-                        ga4PropertyId={ga4PropertyId}
-                        setGa4PropertyId={setGa4PropertyId}
-                        gbpLocationId={gbpLocationId}
-                        setGbpLocationId={setGbpLocationId}
-                        cvEventName={cvEventName}
-                        setCvEventName={setCvEventName}
-                        onSave={handleSave}
-                        loading={loading}
-                    />
-                </div>
-            </div>
+                    <TabsTrigger value="settings" className="flex items-center gap-2">
+                        <Settings className="h-4 w-4" />
+                        店舗設定
+                    </TabsTrigger>
+                </TabsList>
+
+                {/* Tab 1: Post Generation */}
+                <TabsContent value="post-gen" className="space-y-4">
+                    {storeId && (
+                        <PostGeneration storeId={storeId} strategyData={strategyData} />
+                    )}
+                </TabsContent>
+
+                {/* Tab 2: Strategy */}
+                <TabsContent value="strategy" className="space-y-4">
+                    <div className="border rounded-lg bg-white p-4 shadow-sm">
+                        <StrategyView />
+                    </div>
+                </TabsContent>
+
+                {/* Tab 3: Settings (Original Layout) */}
+                <TabsContent value="settings" className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+                        {/* Left Column: Settings */}
+                        <div className="col-span-7 lg:col-span-4 space-y-4">
+                            {store && (
+                                <StoreSettings
+                                    store={store}
+                                    name={name}
+                                    setName={setName}
+                                    address={address}
+                                    setAddress={setAddress}
+                                    phone={phone}
+                                    setPhone={setPhone}
+                                    targetAudience={targetAudience}
+                                    setTargetAudience={setTargetAudience}
+                                    initialBudget={initialBudget}
+                                    setInitialBudget={setInitialBudget}
+                                    industry={industry}
+                                    setIndustry={setIndustry}
+                                    onSave={handleSave}
+                                    loading={loading}
+                                />
+                            )}
+                        </div>
+
+                        {/* Right Column: Integrations */}
+                        <div className="col-span-7 lg:col-span-3 space-y-4">
+                            <Integrations
+                                metaCampaignId={metaCampaignId}
+                                setMetaCampaignId={setMetaCampaignId}
+                                campaigns={campaigns}
+                                ga4PropertyId={ga4PropertyId}
+                                setGa4PropertyId={setGa4PropertyId}
+                                gbpLocationId={gbpLocationId}
+                                setGbpLocationId={setGbpLocationId}
+                                cvEventName={cvEventName}
+                                setCvEventName={setCvEventName}
+                                onSave={handleSave}
+                                loading={loading}
+                            />
+                        </div>
+                    </div>
+                </TabsContent>
+            </Tabs>
         </div>
     )
 }

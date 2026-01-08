@@ -28,9 +28,21 @@ export async function GET(request: Request) {
             }
         )
 
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
         if (!error) {
+            // Save Google Access Token to Cookie for Server Actions
+            const providerToken = data.session?.provider_token
+            if (providerToken) {
+                cookieStore.set('google_access_token', providerToken, {
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === 'production',
+                    sameSite: 'lax',
+                    path: '/',
+                    maxAge: 60 * 60 // 1 hour
+                })
+            }
+
             return NextResponse.redirect(`${origin}${next}`)
         } else {
             console.error('Auth Callback Error:', error)
