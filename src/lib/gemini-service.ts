@@ -53,10 +53,13 @@ export async function generateBannerWithGemini(
 ): Promise<BannerResult> {
     const { analysisText, storeUrl, referenceImageBase64 } = params
 
-    // Get API key from environment
-    const apiKey = process.env.GEMINI_API_KEY
+    // Get API key from DB or environment
+    const { getGeminiKey } = await import('@/lib/api-key-service')
+    const dbKey = await getGeminiKey()
+    const apiKey = dbKey || process.env.GEMINI_API_KEY
+
     if (!apiKey) {
-        throw new Error('GEMINI_API_KEY is not configured in environment variables')
+        throw new Error('GEMINI_API_KEY is not configured in settings or environment variables')
     }
 
     // Initialize Gemini

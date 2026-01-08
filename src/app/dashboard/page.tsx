@@ -90,7 +90,7 @@ export default function DashboardPage() {
                     store.meta_campaign_id || 'none',
                     store.ga4_property_id || '',
                     googleToken || undefined,
-                    metaToken || undefined,
+                    store.meta_access_token || metaToken || undefined, // Use DB token first, then localStorage fallback
                     store.cv_event_name || '',
                     store.meta_ad_account_id, // Pass the saved Ad Account ID
                     dateRange && dateRange.from && dateRange.to ? { from: dateRange.from, to: dateRange.to } : undefined
@@ -191,9 +191,9 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <h2 className="text-3xl font-bold tracking-tight">Overview</h2>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
                     <Select
                         value={selectedStore?.id || ""}
                         onValueChange={(value) => {
@@ -201,7 +201,7 @@ export default function DashboardPage() {
                             setSelectedStore(store || null)
                         }}
                     >
-                        <SelectTrigger className="w-[200px] bg-white">
+                        <SelectTrigger className="w-[200px] bg-card">
                             <StoreIcon className="mr-2 h-4 w-4" />
                             <SelectValue placeholder="店舗を選択" />
                         </SelectTrigger>
@@ -224,7 +224,7 @@ export default function DashboardPage() {
             </div>
 
             {loading ? (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
                     {[...Array(4)].map((_, i) => (
                         <Card key={i} className="animate-pulse">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -238,7 +238,7 @@ export default function DashboardPage() {
                     ))}
                 </div>
             ) : metrics ? (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Total Spend</CardTitle>
@@ -294,8 +294,8 @@ export default function DashboardPage() {
                 </div>
             )}
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <div className="col-span-4">
+            <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
+                <div className="col-span-1 lg:col-span-4">
                     <AIAnalysis
                         analysisResult={analysisResult}
                         analysisMetrics={analysisMetrics}
@@ -319,7 +319,7 @@ export default function DashboardPage() {
                         setRemarks={setRemarks}
                     />
                 </div>
-                <Card className="col-span-3">
+                <Card className="col-span-1 lg:col-span-3">
                     <CardHeader>
                         <CardTitle>Recent Activity</CardTitle>
                     </CardHeader>

@@ -106,7 +106,7 @@ export function Integrations({
     }, [])
 
     return (
-        <Card className="bg-slate-50 border-blue-100 h-full">
+        <Card className="h-full">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Globe className="h-5 w-5" /> プラットフォーム連携
@@ -120,7 +120,7 @@ export function Integrations({
                         <BarChart3 className="h-4 w-4 text-blue-600" /> Meta広告キャンペーン
                     </Label>
                     <Select value={metaCampaignId} onValueChange={setMetaCampaignId}>
-                        <SelectTrigger className="bg-white">
+                        <SelectTrigger className="bg-card">
                             <SelectValue placeholder="未連携" />
                         </SelectTrigger>
                         <SelectContent>
@@ -152,7 +152,7 @@ export function Integrations({
                     <div className="space-y-2 mt-4">
                         <Label>Google Business Profile (GBP)</Label>
                         <Select value={gbpLocationId} onValueChange={setGbpLocationId} disabled={!isGoogleConnected}>
-                            <SelectTrigger className="bg-white [&>span]:truncate [&>span]:min-w-0">
+                            <SelectTrigger className="bg-card [&>span]:truncate [&>span]:min-w-0">
                                 <SelectValue placeholder={isGoogleConnected ? "ロケーションを選択" : "Google連携が必要です"} />
                             </SelectTrigger>
                             <SelectContent>
@@ -174,7 +174,7 @@ export function Integrations({
                             onValueChange={setGa4PropertyId}
                             disabled={!isGoogleConnected}
                         >
-                            <SelectTrigger className="bg-white [&>span]:truncate [&>span]:min-w-0">
+                            <SelectTrigger className="bg-card [&>span]:truncate [&>span]:min-w-0">
                                 <SelectValue placeholder={isGoogleConnected ? "プロパティを選択" : "Google連携が必要です"} />
                             </SelectTrigger>
                             <SelectContent>
@@ -195,7 +195,7 @@ export function Integrations({
                             value={cvEventName}
                             onChange={(e) => setCvEventName(e.target.value)}
                             placeholder="例: generate_lead"
-                            className="bg-white"
+                            className="bg-card"
                         />
                         <p className="text-xs text-muted-foreground">
                             コンバージョンとして計測するGA4のイベント名を入力してください。

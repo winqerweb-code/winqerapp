@@ -10,12 +10,15 @@ import {
 } from "@/components/ui/select"
 import { Store } from "lucide-react"
 
-export function Header() {
+import { MobileSidebar } from "@/components/layout/sidebar"
+
+export function Header({ isAdmin }: { isAdmin?: boolean }) {
     const { selectedStore, setSelectedStore, stores } = useStore()
 
     return (
-        <header className="flex h-16 items-center justify-between border-b bg-background px-6">
+        <header className="flex h-16 items-center justify-between border-b bg-background/60 backdrop-blur-xl px-6 sticky top-0 z-10 transition-all duration-300">
             <div className="flex items-center gap-4">
+                <MobileSidebar isAdmin={isAdmin} />
                 <Select
                     value={selectedStore?.id || ""}
                     onValueChange={(value) => {

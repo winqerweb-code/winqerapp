@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { Store } from "@/types/store"
 import { useStore } from "@/contexts/store-context"
 import { getStrategy } from "@/app/actions/strategy"
+import { getAdAccountsAction, getCampaignsAction } from "@/app/actions/meta-actions"
 
 // Components
 import { StoreHeader } from "@/components/dashboard/store/store-header"
@@ -50,32 +51,24 @@ export default function StorePage() {
     const [initialBudget, setInitialBudget] = useState<string>("")
     const [cvEventName, setCvEventName] = useState<string>("フッター予約リンク")
     const [industry, setIndustry] = useState<string>("")
-    const [remarks, setRemarks] = useState<string>("") // Added missing state
+    const [remarks, setRemarks] = useState<string>("")
 
-    // Fetch Meta Assets logic (Refactored to minimize duplication, keeping it inside effect for now)
+    // Fetch Meta Assets logic (Secure Server Action)
     useEffect(() => {
         const fetchMetaAssets = async () => {
-            let metaToken = localStorage.getItem('meta_access_token')
-            if (!metaToken) {
-                const { getMetaToken } = await import('@/app/actions/user-settings')
-                const result = await getMetaToken()
-                if (result.success && result.token) metaToken = result.token
-            }
+            try {
+                const result = await getAdAccountsAction()
 
-            if (metaToken) {
-                try {
-                    const { metaApi } = await import('@/lib/meta-api')
-                    const accounts = await metaApi.getAdAccounts(metaToken)
-                    if (accounts && accounts.length > 0) {
-                        if (!selectedAdAccountId) {
-                            const targetId = "864591462413204"
-                            const targetAccount = accounts.find((a: any) => a.id === targetId || a.id === `act_${targetId}`)
-                            setSelectedAdAccountId(targetAccount ? targetAccount.id : accounts[0].id)
-                        }
+                if (result.success && result.accounts && result.accounts.length > 0) {
+                    const accounts = result.accounts
+                    if (!selectedAdAccountId) {
+                        const targetId = "864591462413204"
+                        const targetAccount = accounts.find((a: any) => a.id === targetId || a.id === `act_${targetId}`)
+                        setSelectedAdAccountId(targetAccount ? targetAccount.id : accounts[0].id)
                     }
-                } catch (error) {
-                    console.error('Meta Fetch Error:', error)
                 }
+            } catch (error) {
+                console.error('Meta Fetch Error:', error)
             }
         }
         fetchMetaAssets()
@@ -84,21 +77,16 @@ export default function StorePage() {
     useEffect(() => {
         const fetchCampaigns = async () => {
             if (!selectedAdAccountId) return
-            let metaToken = localStorage.getItem('meta_access_token')
-            if (!metaToken) {
-                const { getMetaToken } = await import('@/app/actions/user-settings')
-                const result = await getMetaToken()
-                if (result.success && result.token) metaToken = result.token
-            }
 
-            if (metaToken) {
-                try {
-                    const { metaApi } = await import('@/lib/meta-api')
-                    const fetchedCampaigns = await metaApi.getCampaigns(selectedAdAccountId, metaToken)
-                    setCampaigns(fetchedCampaigns || [])
-                } catch (error) {
+            try {
+                const result = await getCampaignsAction(selectedAdAccountId)
+                if (result.success && result.campaigns) {
+                    setCampaigns(result.campaigns)
+                } else {
                     setCampaigns([])
                 }
+            } catch (error) {
+                setCampaigns([])
             }
         }
         fetchCampaigns()
@@ -189,11 +177,11 @@ export default function StorePage() {
     if (!storeId) return <div>Invalid Store ID</div>
 
     return (
-        <div className="flex-1 space-y-4 p-6 pt-6 bg-slate-50/50 min-h-screen">
+        <div className="flex-1 space-y-4 p-6 pt-6 bg-background min-h-screen">
             <StoreHeader name={name} storeId={storeId} />
 
             <Tabs defaultValue="post-gen" className="space-y-4">
-                <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+                <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 lg:w-[400px] h-auto">
                     <TabsTrigger value="post-gen" className="flex items-center gap-2">
                         <Sparkles className="h-4 w-4" />
                         投稿生成
@@ -218,16 +206,16 @@ export default function StorePage() {
 
                 {/* Tab 2: Strategy */}
                 <TabsContent value="strategy" className="space-y-4">
-                    <div className="border rounded-lg bg-white p-4 shadow-sm">
+                    <div className="border rounded-lg bg-card p-4 shadow-sm">
                         <StrategyView />
                     </div>
                 </TabsContent>
 
                 {/* Tab 3: Settings (Original Layout) */}
                 <TabsContent value="settings" className="space-y-4">
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+                    <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
                         {/* Left Column: Settings */}
-                        <div className="col-span-7 lg:col-span-4 space-y-4">
+                        <div className="col-span-1 lg:col-span-4 space-y-4">
                             {store && (
                                 <StoreSettings
                                     store={store}
@@ -250,7 +238,7 @@ export default function StorePage() {
                         </div>
 
                         {/* Right Column: Integrations */}
-                        <div className="col-span-7 lg:col-span-3 space-y-4">
+                        <div className="col-span-1 lg:col-span-3 space-y-4">
                             <Integrations
                                 metaCampaignId={metaCampaignId}
                                 setMetaCampaignId={setMetaCampaignId}

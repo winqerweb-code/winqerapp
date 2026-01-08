@@ -3,66 +3,80 @@
 @tailwind utilities;
 
 @layer base {
+
+  /* Force Dark Theme Variables as Default */
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* User Specified Colors (v2) */
+    --background: #14181F;
+    /* Slightly lighter dark background */
+    --foreground: #E2E6EB;
+    /* Softer white for text */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Glass Cards */
+    --card: rgba(255, 255, 255, 0.07);
+    /* More transparent card */
+    --card-foreground: #E2E6EB;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: #14181F;
+    /* Match background */
+    --popover-foreground: #E2E6EB;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Accent - Bright Sky Blue */
+    --primary: #5DA9FF;
+    --primary-foreground: #FFFFFF;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: rgba(255, 255, 255, 0.10);
+    /* Slightly stronger contrast */
+    --secondary-foreground: #E2E6EB;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: #1A1F29;
+    /* Slightly lighter than bg */
+    --muted-foreground: #B8C0CC;
+    /* Sub-text color */
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: #5DA9FF;
+    --accent-foreground: #FFFFFF;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: #FF453A;
+    --destructive-foreground: #FFFFFF;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: rgba(255, 255, 255, 0.10);
+    /* Subtle border */
+    --input: rgba(255, 255, 255, 0.10);
+    --ring: rgba(93, 169, 255, 0.5);
 
     --radius: 0.5rem;
+    /* Reduced radius for sharper look */
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: #14181F;
+    --foreground: #E2E6EB;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: rgba(255, 255, 255, 0.07);
+    --card-foreground: #E2E6EB;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: #14181F;
+    --popover-foreground: #E2E6EB;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: #5DA9FF;
+    --primary-foreground: #FFFFFF;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: rgba(255, 255, 255, 0.10);
+    --secondary-foreground: #E2E6EB;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: #1A1F29;
+    --muted-foreground: #B8C0CC;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: #5DA9FF;
+    --accent-foreground: #FFFFFF;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: #FF453A;
+    --destructive-foreground: #FFFFFF;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: rgba(255, 255, 255, 0.10);
+    --input: rgba(255, 255, 255, 0.10);
+    --ring: rgba(93, 169, 255, 0.5);
   }
 }
 

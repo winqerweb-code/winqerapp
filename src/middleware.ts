@@ -61,6 +61,18 @@ export async function middleware(request: NextRequest) {
         if (!session) {
             return NextResponse.redirect(new URL('/login', request.url))
         }
+
+        // Check Profile & Role
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single()
+
+        // If no profile exists, it might be a new user (trigger should handle it, but race condition possible)
+        // For now, allow access but maybe redirect to a "setup" page if needed.
+        // If we want strict RBAC, we could check role here.
+        // e.g. if (request.nextUrl.pathname.startsWith('/dashboard/admin') && profile?.role !== 'PROVIDER_ADMIN') ...
     }
 
     // Redirect /login to /dashboard if already logged in

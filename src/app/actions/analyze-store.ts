@@ -37,10 +37,10 @@ export async function analyzeStore(
         // Try to get token from DB if not provided
         let effectiveMetaToken = metaAccessToken
         if (!effectiveMetaToken) {
-            const { getMetaToken } = await import('@/app/actions/user-settings')
-            const result = await getMetaToken()
-            if (result.success && result.token) {
-                effectiveMetaToken = result.token
+            const { getMetaToken } = await import('@/lib/api-key-service')
+            const token = await getMetaToken()
+            if (token) {
+                effectiveMetaToken = token
             }
         }
 

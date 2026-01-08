@@ -26,6 +26,10 @@ async function getSupabase() {
     )
 }
 
+import { verifyStoreAccess, getAssignedStores, isProviderAdmin } from '@/lib/rbac'
+
+// ... (getSupabase helper remains same)
+
 export async function getStore(id: string) {
     const supabase = await getSupabase()
     const { data: { user } } = await supabase.auth.getUser()
@@ -34,11 +38,16 @@ export async function getStore(id: string) {
         return { success: false, error: 'Unauthorized' }
     }
 
+    // RBAC Check
+    const { hasAccess } = await verifyStoreAccess(user.id, id)
+    if (!hasAccess) {
+        return { success: false, error: 'Unauthorized: Access Denied' }
+    }
+
     const { data, error } = await supabase
         .from('stores')
         .select('*')
         .eq('id', id)
-        .eq('user_id', user.id) // Security: Ensure user owns the store
         .single()
 
     if (error || !data) {
@@ -57,11 +66,16 @@ export async function updateStore(id: string, data: Partial<Store>) {
         return { success: false, error: 'Unauthorized' }
     }
 
+    // RBAC Check (Only Store Admin or Provider can update)
+    const { hasAccess, role } = await verifyStoreAccess(user.id, id)
+    if (!hasAccess || (role !== 'STORE_ADMIN' && !(await isProviderAdmin(user.id)))) {
+        return { success: false, error: 'Unauthorized: Access Denied' }
+    }
+
     const { data: updatedStore, error } = await supabase
         .from('stores')
         .update(data)
         .eq('id', id)
-        .eq('user_id', user.id) // Security: Ensure user owns the store
         .select()
         .single()
 
@@ -81,35 +95,27 @@ export async function getStores() {
         return { success: false, error: 'Unauthorized' }
     }
 
-    const { data, error } = await supabase
-        .from('stores')
-        .select('*')
-        .eq('user_id', user.id) // Security: Fetch only user's stores
-        .order('created_at', { ascending: false })
+    // Fetch assigned stores via RBAC helper
+    const stores = await getAssignedStores(user.id)
 
-    if (error) {
-        console.error('Failed to fetch stores:', error)
-        return { success: false, stores: [] }
-    }
-
-    return { success: true, stores: data as Store[] }
+    return { success: true, stores: stores as Store[] }
 }
 
 export async function createStore(data: Omit<Store, 'id' | 'created_at' | 'user_id'>) {
+    // Only Provider Admin can create stores now (via provider-actions)
+    // But if we want to keep this for backward compatibility or self-serve (if allowed later):
+    // For now, restrict to Provider Admin.
     const supabase = await getSupabase()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) {
-        return { success: false, error: 'Unauthorized' }
+    if (!user || !(await isProviderAdmin(user.id))) {
+        return { success: false, error: 'Unauthorized: Provider Access Required' }
     }
 
     const newStore = {
         ...data,
-        user_id: user.id,
-        // id and created_at are handled by DB default if configured, 
-        // but let's assume we might need to pass them or let DB handle it.
-        // If DB handles id (uuid) and created_at, we don't send them.
-        // Assuming 'stores' table has defaults.
+        // user_id is removed from schema, so we don't set it.
+        // Assignments must be handled separately or immediately after creation.
     }
 
     const { data: createdStore, error } = await supabase

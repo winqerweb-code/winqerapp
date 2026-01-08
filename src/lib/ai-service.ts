@@ -1,27 +1,11 @@
 import { OpenAI } from "openai"
-
-// Helper to get API key from storage safely
-const getOpenAIKey = () => {
-    if (typeof window === "undefined") return null
-    return localStorage.getItem("openai_api_key")
-}
+import { getOpenAIKey } from "@/lib/api-key-service"
 
 export type GeneratedCreative = {
     title: string
     body: string
     image_prompt: string
     mock_image_url: string
-}
-
-const getOpenAIClient = () => {
-    if (typeof window === "undefined") return null
-    const apiKey = localStorage.getItem("openai_api_key")
-    if (!apiKey) return null
-
-    return new OpenAI({
-        apiKey: apiKey,
-        dangerouslyAllowBrowser: true // Allowing client-side for this demo/dashboard
-    })
 }
 
 export const aiService = {
@@ -31,27 +15,14 @@ export const aiService = {
         referenceImageBase64?: string,
         apiKey?: string
     ): Promise<GeneratedCreative> => {
-        // Try to use provided API key first (for server-side), then client-side localStorage
-        let openai = null
-
-        if (apiKey) {
-            // Server-side usage with provided key
-            // Workaround: Set env var because OpenAI constructor sometimes fails to pick up the apiKey argument in this environment
-            process.env.OPENAI_API_KEY = apiKey.trim()
-
-            try {
-                openai = new OpenAI({
-                    apiKey: apiKey.trim(),
-                })
-            } catch (e) {
-                console.error('generateCreative: Error creating OpenAI instance:', e)
-            }
-        } else {
-            // Client-side usage with localStorage
-            openai = getOpenAIClient()
+        // Try to use provided API key first, then DB
+        let openaiKey = apiKey
+        if (!openaiKey) {
+            const dbKey = await getOpenAIKey()
+            if (dbKey) openaiKey = dbKey
         }
 
-        if (!openai) {
+        if (!openaiKey) {
             // Fallback to mock if no key
             await new Promise((resolve) => setTimeout(resolve, 2000))
             return {
@@ -61,6 +32,14 @@ export const aiService = {
                 mock_image_url: "https://placehold.co/1024x1024?text=Mock+Generated+Image",
             }
         }
+
+        // Server-side usage
+        // Workaround: Set env var because OpenAI constructor sometimes fails to pick up the apiKey argument in this environment
+        process.env.OPENAI_API_KEY = openaiKey.trim()
+
+        const openai = new OpenAI({
+            apiKey: openaiKey.trim(),
+        })
 
         // Extract store info from URL if provided
         let storeInfoText = ''
@@ -163,7 +142,7 @@ Task: Generate a new ad concept (Headline in Japanese, Primary Text in Japanese,
         objective: string,
         ads: any[]
     ): Promise<{ summary: string; suggestions: { title: string; description: string; priority: "High" | "Medium" | "Low" }[] }> => {
-        const apiKey = getOpenAIKey()
+        const apiKey = await getOpenAIKey()
         if (!apiKey) {
             // Mock response
             await new Promise((resolve) => setTimeout(resolve, 2000))
@@ -178,7 +157,6 @@ Task: Generate a new ad concept (Headline in Japanese, Primary Text in Japanese,
 
         const openai = new OpenAI({
             apiKey: apiKey,
-            dangerouslyAllowBrowser: true
         })
 
         // Prepare data for AI
@@ -277,33 +255,24 @@ Task: Generate a new ad concept (Headline in Japanese, Primary Text in Japanese,
 }
 
 export const generateText = async (prompt: string, apiKey?: string): Promise<string> => {
-    // Try to use provided API key first (for server-side), then client-side localStorage
-    let openai = null
-
-    if (apiKey) {
-        // Server-side usage with provided key
-        // Workaround: Set env var because OpenAI constructor sometimes fails to pick up the apiKey argument in this environment
-        process.env.OPENAI_API_KEY = apiKey.trim()
-
-        try {
-            openai = new OpenAI({
-                apiKey: apiKey.trim(),
-            })
-        } catch (e) {
-            console.error('generateText: Error creating OpenAI instance:', e)
-        }
-    } else {
-        // Client-side usage with localStorage
-        openai = getOpenAIClient()
+    // Try to use provided API key first, then DB
+    let openaiKey = apiKey
+    if (!openaiKey) {
+        const dbKey = await getOpenAIKey()
+        if (dbKey) openaiKey = dbKey
     }
 
-    if (!openai) {
+    if (!openaiKey) {
         await new Promise((resolve) => setTimeout(resolve, 1000))
         return "Mock Analysis: The ad spend is efficient with a high ROAS. Traffic quality is good, but engagement rate could be improved. Recommendation: Optimize the landing page for better conversion."
     }
 
     try {
         console.log('generateText: Calling OpenAI API...')
+        process.env.OPENAI_API_KEY = openaiKey.trim() // Workaround
+        const openai = new OpenAI({
+            apiKey: openaiKey.trim(),
+        })
         const response = await openai.chat.completions.create({
             model: "gpt-4o",
             messages: [{ role: "user", content: prompt }],

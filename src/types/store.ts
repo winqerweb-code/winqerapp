@@ -14,6 +14,9 @@ export type Store = {
     ga4_property_name?: string // Property Name (Display)
     gbp_location_id?: string
 
+    // Tokens (Server-side use mostly)
+    meta_access_token?: string
+
     // Analysis Settings
     cv_event_name?: string
     target_audience?: string

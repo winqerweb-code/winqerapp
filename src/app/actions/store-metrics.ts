@@ -47,11 +47,15 @@ export async function getStoreMetrics(
         // Try to get token from DB if not provided
         let effectiveMetaToken = metaAccessToken
         if (!effectiveMetaToken) {
-            const { getMetaToken } = await import('@/app/actions/user-settings')
-            const result = await getMetaToken()
-            if (result.success && result.token) {
-                effectiveMetaToken = result.token
+            // Get Meta Token
+            const { getMetaToken } = await import('@/lib/api-key-service')
+            const metaToken = await getMetaToken()
+
+            if (!metaToken) {
+                console.warn('⚠️ No Meta Token found')
+                return { success: false, error: 'Meta Token not found' }
             }
+            effectiveMetaToken = metaToken
         }
 
         if (effectiveMetaToken) {

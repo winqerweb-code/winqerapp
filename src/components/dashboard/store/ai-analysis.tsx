@@ -73,7 +73,7 @@ export function AIAnalysis({
                             value={industry}
                             onChange={(e) => setIndustry(e.target.value)}
                             placeholder="例: 美容室、飲食店"
-                            className="bg-white"
+                            className=""
                         />
                     </div>
                     <div className="space-y-2">
@@ -82,13 +82,13 @@ export function AIAnalysis({
                             value={region}
                             onChange={(e) => setRegion(e.target.value)}
                             placeholder="例: 東京都渋谷区"
-                            className="bg-white"
+                            className=""
                         />
                     </div>
                     <div className="space-y-2">
                         <Label>広告フォーマット</Label>
                         <Select value={adFormat} onValueChange={setAdFormat}>
-                            <SelectTrigger className="bg-white">
+                            <SelectTrigger className="">
                                 <SelectValue placeholder="選択してください" />
                             </SelectTrigger>
                             <SelectContent>
@@ -102,7 +102,7 @@ export function AIAnalysis({
                     <div className="space-y-2">
                         <Label>広告の目的</Label>
                         <Select value={adObjective} onValueChange={setAdObjective}>
-                            <SelectTrigger className="bg-white">
+                            <SelectTrigger className="">
                                 <SelectValue placeholder="選択してください" />
                             </SelectTrigger>
                             <SelectContent>
@@ -118,7 +118,7 @@ export function AIAnalysis({
                             value={targetAudience}
                             onChange={(e) => setTargetAudience(e.target.value)}
                             placeholder="例: 25〜39歳女性、主婦層、オーガニック志向"
-                            className="bg-white"
+                            className=""
                         />
                     </div>
                     <div className="space-y-2">
@@ -127,7 +127,7 @@ export function AIAnalysis({
                             value={cvLabel}
                             onChange={(e) => setCvLabel(e.target.value)}
                             placeholder="例: 予約完了、LINE追加"
-                            className="bg-white"
+                            className=""
                         />
                     </div>
                     <div className="space-y-2">
@@ -136,7 +136,7 @@ export function AIAnalysis({
                             value={ga4CvEvent}
                             onChange={(e) => setGa4CvEvent(e.target.value)}
                             placeholder="例: purchase, generate_lead"
-                            className="bg-white"
+                            className=""
                         />
                     </div>
                     <div className="space-y-2 col-span-2">
@@ -145,7 +145,7 @@ export function AIAnalysis({
                             value={remarks}
                             onChange={(e) => setRemarks(e.target.value)}
                             placeholder="例: 今月から新メニューを開始、競合店が増えた、など"
-                            className="bg-white"
+                            className=""
                         />
                     </div>
                 </div>
@@ -163,7 +163,7 @@ export function AIAnalysis({
 
                 {/* Analysis Result Display */}
                 {analysisResult && (
-                    <div className="mt-6 p-6 bg-white rounded-lg border border-purple-100 shadow-sm">
+                    <div className="mt-6 p-6 bg-card rounded-lg border border-white/10 shadow-sm">
                         <h3 className="font-semibold mb-4 flex items-center gap-2 text-lg text-purple-800">
                             <Brain className="h-5 w-5" />
                             分析結果

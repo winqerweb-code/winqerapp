@@ -19,7 +19,22 @@ export const metaApiServer = {
             return data.data
         } catch (e) {
             console.warn("Meta API Error (Accounts):", e)
-            return MOCK_AD_ACCOUNTS
+            throw e // Propagate error instead of returning mock data
+        }
+    },
+
+    getCampaigns: async (accessToken: string, adAccountId: string) => {
+        try {
+            console.log(`🔍 [Meta API Server] Fetching campaigns for account: ${adAccountId}`)
+            const res = await fetch(
+                `https://graph.facebook.com/v18.0/${adAccountId}/campaigns?fields=id,name,objective,status,created_time&access_token=${accessToken}`
+            )
+            const data = await res.json()
+            if (data.error) throw new Error(data.error.message)
+            return data.data
+        } catch (e) {
+            console.warn("Meta API Error (Campaigns):", e)
+            throw e // Propagate error instead of returning mock data
         }
     },
 

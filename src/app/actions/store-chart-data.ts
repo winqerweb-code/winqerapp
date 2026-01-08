@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import { MOCK_ADS } from '@/lib/mock-data'
 import { metaApiServer } from '@/lib/meta-api'
 import { googleApi } from '@/lib/google-api'
-import { getMetaToken } from '@/app/actions/user-settings'
+
 
 // Helper to format date in JST (YYYY-MM-DD)
 function formatJST(date: Date): string {
@@ -55,11 +55,16 @@ export async function getStoreChartData(
         const cookieStore = cookies()
         effectiveGoogleToken = cookieStore.get('google_access_token')?.value
     }
+
+    // Get Meta Token if not provided
     if (!effectiveMetaToken) {
-        const result = await getMetaToken()
-        if (result.success && result.token) {
-            effectiveMetaToken = result.token
+        const { getMetaToken } = await import('@/lib/api-key-service')
+        const metaToken = await getMetaToken()
+        if (!metaToken) {
+            // If metaAccessToken is not provided and getMetaToken fails, return an error
+            return { success: false, error: 'Meta Token not found' }
         }
+        effectiveMetaToken = metaToken
     }
 
     // 3. Fetch Data
