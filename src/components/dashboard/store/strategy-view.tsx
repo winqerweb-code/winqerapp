@@ -624,7 +624,7 @@ export function StrategyView() {
                         </Card>
 
                         {/* Strategy Summary */}
-                        <Card className="md:col-span-2 bg-slate-50 dark:bg-slate-900">
+                        <Card className="md:col-span-2">
                             <CardHeader><CardTitle>戦略サマリー</CardTitle></CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
@@ -649,7 +649,7 @@ export function StrategyView() {
                             <CardHeader><CardTitle>推奨媒体・手法</CardTitle></CardHeader>
                             <CardContent className="grid gap-4">
                                 {result.recommended_media?.map((media: any, idx: number) => (
-                                    <div key={idx} className="border p-4 rounded-lg bg-slate-50 dark:bg-slate-900">
+                                    <div key={idx} className="border p-4 rounded-lg">
                                         <h4 className="font-bold mb-2 flex items-center">
                                             <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded mr-2">推奨</span>
                                             {media.name}
@@ -721,7 +721,7 @@ export function StrategyView() {
                                         <div className="p-4 space-y-4">
                                             <div>
                                                 <p className="text-xs font-semibold text-muted-foreground mb-1">投稿本文</p>
-                                                <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-md text-sm whitespace-pre-wrap font-mono">
+                                                <div className="p-3 rounded-md text-sm whitespace-pre-wrap font-mono bg-muted">
                                                     {post.body}
                                                 </div>
                                             </div>
