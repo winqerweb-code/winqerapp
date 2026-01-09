@@ -18,7 +18,7 @@ interface IdInputWithSelectProps {
     label: string
     value: string
     onChange: (value: string) => void
-    onSave: (value: string) => Promise<void>
+    onSave?: (value: string) => Promise<void>
     options: Option[]
     placeholder?: string
     buttonLabel?: string
@@ -41,8 +41,9 @@ export function IdInputWithSelect({
     isLoadingFetch = false,
     isLoadingSave = false,
     disabled = false,
-    fetchLabel = "取得"
-}: IdInputWithSelectProps) {
+    fetchLabel = "取得",
+    showSaveButton = true
+}: IdInputWithSelectProps & { showSaveButton?: boolean }) {
     const [localValue, setLocalValue] = useState(value)
 
     // Update local state when prop changes
@@ -62,7 +63,9 @@ export function IdInputWithSelect({
     }
 
     const handleSave = async () => {
-        await onSave(localValue)
+        if (onSave) {
+            await onSave(localValue)
+        }
     }
 
     return (
@@ -126,17 +129,19 @@ export function IdInputWithSelect({
                     )}
                 </div>
 
-                <Button
-                    onClick={handleSave}
-                    disabled={isLoadingSave || disabled || !localValue}
-                    size="default"
-                >
-                    {isLoadingSave ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                        <Save className="h-4 w-4" />
-                    )}
-                </Button>
+                {showSaveButton && (
+                    <Button
+                        onClick={handleSave}
+                        disabled={isLoadingSave || disabled || !localValue}
+                        size="default"
+                    >
+                        {isLoadingSave ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <Save className="h-4 w-4" />
+                        )}
+                    </Button>
+                )}
             </div>
             {localValue && options.find(o => o.id === localValue) && (
                 <p className="text-xs text-muted-foreground ml-1">

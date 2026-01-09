@@ -29,7 +29,7 @@ import { getStores } from "@/app/actions/store"
 import { Store } from "@/types/store"
 import { SecureApiKeyInput } from "@/components/secure-api-key-input"
 import { IdInputWithSelect } from "@/components/id-input-with-select"
-import { Trash2, RefreshCw } from "lucide-react"
+import { Trash2, RefreshCw, Save } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { GoogleConnectButton } from "@/components/google-connect-button"
 import { supabase } from "@/lib/auth"
@@ -424,14 +424,7 @@ export default function AdminDashboard() {
                                                             setSelectedStore({ ...selectedStore, meta_ad_account_id: val })
                                                         }
                                                     }}
-                                                    onSave={async (val) => {
-                                                        const res = await handleSaveSecret('meta_ad_account_id', val)
-                                                        if (res.success) {
-                                                            // Reset campaign when account changes
-                                                            handleSaveSecret('meta_campaign_id', "")
-                                                            setMetaCampaigns([])
-                                                        }
-                                                    }}
+                                                    showSaveButton={false}
                                                     options={metaAdAccounts.map((acc: any) => ({
                                                         id: acc.id,
                                                         label: acc.name,
@@ -451,7 +444,7 @@ export default function AdminDashboard() {
                                                             setSelectedStore({ ...selectedStore, meta_campaign_id: val })
                                                         }
                                                     }}
-                                                    onSave={async (val) => { await handleSaveSecret('meta_campaign_id', val) }}
+                                                    showSaveButton={false}
                                                     options={metaCampaigns.map((camp: any) => ({
                                                         id: camp.id,
                                                         label: camp.name,
@@ -482,7 +475,7 @@ export default function AdminDashboard() {
                                                             setSelectedStore({ ...selectedStore, ga4_property_id: val })
                                                         }
                                                     }}
-                                                    onSave={async (val) => { await handleSaveSecret('ga4_property_id', val) }}
+                                                    showSaveButton={false}
                                                     options={ga4Properties.map((prop: any) => ({
                                                         id: prop.name,
                                                         label: prop.displayName,
@@ -500,7 +493,7 @@ export default function AdminDashboard() {
                                                             setSelectedStore({ ...selectedStore, gbp_location_id: val })
                                                         }
                                                     }}
-                                                    onSave={async (val) => { await handleSaveSecret('gbp_location_id', val) }}
+                                                    showSaveButton={false}
                                                     options={gbpLocations.map((loc: any) => ({
                                                         id: loc.name,
                                                         label: loc.title,
@@ -509,6 +502,33 @@ export default function AdminDashboard() {
                                                     disabled={!isGoogleConnected}
                                                     placeholder="locations/..."
                                                 />
+                                            </div>
+
+                                            <div className="pt-6">
+                                                <Button
+                                                    onClick={async () => {
+                                                        if (!selectedStoreId) return
+                                                        const secrets = {
+                                                            meta_ad_account_id: selectedStore?.meta_ad_account_id || "",
+                                                            meta_campaign_id: selectedStore?.meta_campaign_id || "",
+                                                            ga4_property_id: selectedStore?.ga4_property_id || "",
+                                                            gbp_location_id: selectedStore?.gbp_location_id || ""
+                                                        }
+                                                        const res = await updateStoreSecretsAction(selectedStoreId, secrets)
+                                                        if (res.success) {
+                                                            toast({ title: "設定を保存しました" })
+                                                        } else {
+                                                            toast({ title: "保存エラー", description: res.error, variant: "destructive" })
+                                                        }
+                                                    }}
+                                                    className="w-full"
+                                                >
+                                                    <Save className="mr-2 h-4 w-4" />
+                                                    設定を保存
+                                                </Button>
+                                                <p className="text-xs text-muted-foreground mt-2 text-center">
+                                                    ※ APIキー以外の設定（Meta/Google ID等）はこのボタンで一括保存されます。
+                                                </p>
                                             </div>
                                         </div>
                                     </CardContent>
