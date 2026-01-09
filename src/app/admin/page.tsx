@@ -28,6 +28,7 @@ import {
 import { getStores } from "@/app/actions/store"
 import { Store } from "@/types/store"
 import { SecureApiKeyInput } from "@/components/secure-api-key-input"
+import { IdInputWithSelect } from "@/components/id-input-with-select"
 import { Trash2, RefreshCw } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { GoogleConnectButton } from "@/components/google-connect-button"
@@ -415,76 +416,53 @@ export default function AdminDashboard() {
                                             />
 
                                             <div className="space-y-4">
-                                                <div className="space-y-2">
-                                                    <div className="flex justify-between items-center">
-                                                        <Label>Meta Ad Account ID</Label>
-                                                        <Button variant="outline" size="sm" onClick={fetchMetaAdAccounts} disabled={isLoadingMetaAccounts}>
-                                                            <RefreshCw className={`h-3 w-3 mr-2 ${isLoadingMetaAccounts ? 'animate-spin' : ''}`} />
-                                                            アカウント取得
-                                                        </Button>
-                                                    </div>
-                                                    <Select
-                                                        value={selectedStore?.meta_ad_account_id || ""}
-                                                        onValueChange={(val) => {
-                                                            handleSaveSecret('meta_ad_account_id', val)
+                                                <IdInputWithSelect
+                                                    label="Meta Ad Account ID"
+                                                    value={selectedStore?.meta_ad_account_id || ""}
+                                                    onChange={(val) => {
+                                                        if (selectedStore) {
+                                                            setSelectedStore({ ...selectedStore, meta_ad_account_id: val })
+                                                        }
+                                                    }}
+                                                    onSave={async (val) => {
+                                                        const res = await handleSaveSecret('meta_ad_account_id', val)
+                                                        if (res.success) {
                                                             // Reset campaign when account changes
                                                             handleSaveSecret('meta_campaign_id', "")
                                                             setMetaCampaigns([])
-                                                        }}
-                                                    >
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="広告アカウントを選択" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {metaAdAccounts.map((acc: any) => (
-                                                                <SelectItem key={acc.id} value={acc.id}>
-                                                                    {acc.name} ({acc.id})
-                                                                </SelectItem>
-                                                            ))}
-                                                            {selectedStore?.meta_ad_account_id && !metaAdAccounts.find(a => a.id === selectedStore.meta_ad_account_id) && (
-                                                                <SelectItem value={selectedStore.meta_ad_account_id}>
-                                                                    {selectedStore.meta_ad_account_id} (保存済み)
-                                                                </SelectItem>
-                                                            )}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
+                                                        }
+                                                    }}
+                                                    options={metaAdAccounts.map((acc: any) => ({
+                                                        id: acc.id,
+                                                        label: acc.name,
+                                                        subLabel: acc.id
+                                                    }))}
+                                                    onFetch={async () => { await fetchMetaAdAccounts() }}
+                                                    isLoadingFetch={isLoadingMetaAccounts}
+                                                    fetchLabel="アカウント取得"
+                                                    placeholder="act_..."
+                                                />
 
-                                                <div className="space-y-2">
-                                                    <div className="flex justify-between items-center">
-                                                        <Label>Meta Campaign ID</Label>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={fetchMetaCampaigns}
-                                                            disabled={isLoadingMetaCampaigns || !selectedStore?.meta_ad_account_id}
-                                                        >
-                                                            <RefreshCw className={`h-3 w-3 mr-2 ${isLoadingMetaCampaigns ? 'animate-spin' : ''}`} />
-                                                            キャンペーン取得
-                                                        </Button>
-                                                    </div>
-                                                    <Select
-                                                        value={selectedStore?.meta_campaign_id || ""}
-                                                        onValueChange={(val) => handleSaveSecret('meta_campaign_id', val)}
-                                                        disabled={!selectedStore?.meta_ad_account_id}
-                                                    >
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder={selectedStore?.meta_ad_account_id ? "キャンペーンを選択" : "先に広告アカウントを選択してください"} />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {metaCampaigns.map((camp: any) => (
-                                                                <SelectItem key={camp.id} value={camp.id}>
-                                                                    {camp.name} ({camp.status})
-                                                                </SelectItem>
-                                                            ))}
-                                                            {selectedStore?.meta_campaign_id && !metaCampaigns.find(c => c.id === selectedStore.meta_campaign_id) && (
-                                                                <SelectItem value={selectedStore.meta_campaign_id}>
-                                                                    {selectedStore.meta_campaign_id} (保存済み)
-                                                                </SelectItem>
-                                                            )}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
+                                                <IdInputWithSelect
+                                                    label="Meta Campaign ID"
+                                                    value={selectedStore?.meta_campaign_id || ""}
+                                                    onChange={(val) => {
+                                                        if (selectedStore) {
+                                                            setSelectedStore({ ...selectedStore, meta_campaign_id: val })
+                                                        }
+                                                    }}
+                                                    onSave={async (val) => { await handleSaveSecret('meta_campaign_id', val) }}
+                                                    options={metaCampaigns.map((camp: any) => ({
+                                                        id: camp.id,
+                                                        label: camp.name,
+                                                        subLabel: camp.status
+                                                    }))}
+                                                    onFetch={async () => { await fetchMetaCampaigns() }}
+                                                    isLoadingFetch={isLoadingMetaCampaigns}
+                                                    fetchLabel="キャンペーン取得"
+                                                    disabled={!selectedStore?.meta_ad_account_id}
+                                                    placeholder="123..."
+                                                />
                                             </div>
                                         </div>
 
@@ -495,55 +473,42 @@ export default function AdminDashboard() {
                                                 {isGoogleConnected && <span className="text-sm text-green-600">連携済み</span>}
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label>GA4 Property ID</Label>
-                                                    <Select
-                                                        value={selectedStore?.ga4_property_id || ""}
-                                                        onValueChange={(val) => handleSaveSecret('ga4_property_id', val)}
-                                                        disabled={!isGoogleConnected}
-                                                    >
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder={isGoogleConnected ? "プロパティを選択" : "Google連携が必要です"} />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {ga4Properties.map((prop: any) => (
-                                                                <SelectItem key={prop.name} value={prop.name}>
-                                                                    {prop.displayName}
-                                                                </SelectItem>
-                                                            ))}
-                                                            {selectedStore?.ga4_property_id && !ga4Properties.find(p => p.name === selectedStore.ga4_property_id) && (
-                                                                <SelectItem value={selectedStore.ga4_property_id}>
-                                                                    {selectedStore.ga4_property_id} (保存済み)
-                                                                </SelectItem>
-                                                            )}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label>GBP Location ID</Label>
-                                                    <Select
-                                                        value={selectedStore?.gbp_location_id || ""}
-                                                        onValueChange={(val) => handleSaveSecret('gbp_location_id', val)}
-                                                        disabled={!isGoogleConnected}
-                                                    >
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder={isGoogleConnected ? "ロケーションを選択" : "Google連携が必要です"} />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {gbpLocations.map((loc: any) => (
-                                                                <SelectItem key={loc.name} value={loc.name}>
-                                                                    {loc.title}
-                                                                </SelectItem>
-                                                            ))}
-                                                            {selectedStore?.gbp_location_id && !gbpLocations.find(l => l.name === selectedStore.gbp_location_id) && (
-                                                                <SelectItem value={selectedStore.gbp_location_id}>
-                                                                    {selectedStore.gbp_location_id} (保存済み)
-                                                                </SelectItem>
-                                                            )}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <IdInputWithSelect
+                                                    label="GA4 Property ID"
+                                                    value={selectedStore?.ga4_property_id || ""}
+                                                    onChange={(val) => {
+                                                        if (selectedStore) {
+                                                            setSelectedStore({ ...selectedStore, ga4_property_id: val })
+                                                        }
+                                                    }}
+                                                    onSave={async (val) => { await handleSaveSecret('ga4_property_id', val) }}
+                                                    options={ga4Properties.map((prop: any) => ({
+                                                        id: prop.name,
+                                                        label: prop.displayName,
+                                                        subLabel: prop.name
+                                                    }))}
+                                                    disabled={!isGoogleConnected}
+                                                    placeholder="properties/..."
+                                                />
+
+                                                <IdInputWithSelect
+                                                    label="GBP Location ID"
+                                                    value={selectedStore?.gbp_location_id || ""}
+                                                    onChange={(val) => {
+                                                        if (selectedStore) {
+                                                            setSelectedStore({ ...selectedStore, gbp_location_id: val })
+                                                        }
+                                                    }}
+                                                    onSave={async (val) => { await handleSaveSecret('gbp_location_id', val) }}
+                                                    options={gbpLocations.map((loc: any) => ({
+                                                        id: loc.name,
+                                                        label: loc.title,
+                                                        subLabel: loc.name
+                                                    }))}
+                                                    disabled={!isGoogleConnected}
+                                                    placeholder="locations/..."
+                                                />
                                             </div>
                                         </div>
                                     </CardContent>
