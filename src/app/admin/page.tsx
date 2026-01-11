@@ -419,6 +419,7 @@ export default function AdminDashboard() {
                                                 <IdInputWithSelect
                                                     label="Meta Ad Account ID"
                                                     value={selectedStore?.meta_ad_account_id || ""}
+                                                    savedName={selectedStore?.meta_ad_account_name}
                                                     onChange={(val) => {
                                                         if (selectedStore) {
                                                             setSelectedStore({ ...selectedStore, meta_ad_account_id: val })
@@ -439,6 +440,7 @@ export default function AdminDashboard() {
                                                 <IdInputWithSelect
                                                     label="Meta Campaign ID"
                                                     value={selectedStore?.meta_campaign_id || ""}
+                                                    savedName={selectedStore?.meta_campaign_name}
                                                     onChange={(val) => {
                                                         if (selectedStore) {
                                                             setSelectedStore({ ...selectedStore, meta_campaign_id: val })
@@ -470,6 +472,7 @@ export default function AdminDashboard() {
                                                 <IdInputWithSelect
                                                     label="GA4 Property ID"
                                                     value={selectedStore?.ga4_property_id || ""}
+                                                    savedName={selectedStore?.ga4_property_name}
                                                     onChange={(val) => {
                                                         if (selectedStore) {
                                                             setSelectedStore({ ...selectedStore, ga4_property_id: val })
@@ -488,6 +491,7 @@ export default function AdminDashboard() {
                                                 <IdInputWithSelect
                                                     label="GBP Location ID"
                                                     value={selectedStore?.gbp_location_id || ""}
+                                                    savedName={selectedStore?.gbp_location_name}
                                                     onChange={(val) => {
                                                         if (selectedStore) {
                                                             setSelectedStore({ ...selectedStore, gbp_location_id: val })
@@ -507,16 +511,36 @@ export default function AdminDashboard() {
                                             <div className="pt-6">
                                                 <Button
                                                     onClick={async () => {
-                                                        if (!selectedStoreId) return
+                                                        if (!selectedStoreId || !selectedStore) return
+
+                                                        // Find names (labels) for selected IDs
+                                                        const metaAdAccountName = metaAdAccounts.find(a => a.id === selectedStore.meta_ad_account_id)?.name
+                                                        const metaCampaignName = metaCampaigns.find(c => c.id === selectedStore.meta_campaign_id)?.name
+                                                        const ga4PropertyName = ga4Properties.find(p => p.name === selectedStore.ga4_property_id)?.displayName
+                                                        const gbpLocationName = gbpLocations.find(l => l.name === selectedStore.gbp_location_id)?.title
+
                                                         const secrets = {
-                                                            meta_ad_account_id: selectedStore?.meta_ad_account_id || "",
-                                                            meta_campaign_id: selectedStore?.meta_campaign_id || "",
-                                                            ga4_property_id: selectedStore?.ga4_property_id || "",
-                                                            gbp_location_id: selectedStore?.gbp_location_id || ""
+                                                            meta_ad_account_id: selectedStore.meta_ad_account_id || "",
+                                                            meta_ad_account_name: metaAdAccountName,
+                                                            meta_campaign_id: selectedStore.meta_campaign_id || "",
+                                                            meta_campaign_name: metaCampaignName,
+                                                            ga4_property_id: selectedStore.ga4_property_id || "",
+                                                            ga4_property_name: ga4PropertyName,
+                                                            gbp_location_id: selectedStore.gbp_location_id || "",
+                                                            gbp_location_name: gbpLocationName
                                                         }
+
                                                         const res = await updateStoreSecretsAction(selectedStoreId, secrets)
                                                         if (res.success) {
                                                             toast({ title: "設定を保存しました" })
+
+                                                            // FIX: Update local stores state to persist changes when switching
+                                                            const updatedStore = {
+                                                                ...selectedStore,
+                                                                ...secrets
+                                                            }
+                                                            setSelectedStore(updatedStore)
+                                                            setStores(prev => prev.map(s => s.id === selectedStoreId ? { ...s, ...secrets } : s))
                                                         } else {
                                                             toast({ title: "保存エラー", description: res.error, variant: "destructive" })
                                                         }

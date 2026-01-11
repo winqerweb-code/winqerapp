@@ -27,6 +27,8 @@ interface IdInputWithSelectProps {
     isLoadingSave?: boolean
     disabled?: boolean
     fetchLabel?: string
+    showSaveButton?: boolean
+    savedName?: string
 }
 
 export function IdInputWithSelect({
@@ -42,8 +44,9 @@ export function IdInputWithSelect({
     isLoadingSave = false,
     disabled = false,
     fetchLabel = "取得",
-    showSaveButton = true
-}: IdInputWithSelectProps & { showSaveButton?: boolean }) {
+    showSaveButton = true,
+    savedName
+}: IdInputWithSelectProps) {
     const [localValue, setLocalValue] = useState(value)
 
     // Update local state when prop changes
@@ -143,9 +146,9 @@ export function IdInputWithSelect({
                     </Button>
                 )}
             </div>
-            {localValue && options.find(o => o.id === localValue) && (
+            {(options.find(o => o.id === localValue)?.label || (localValue === value && savedName)) && (
                 <p className="text-xs text-muted-foreground ml-1">
-                    選択中: {options.find(o => o.id === localValue)?.label}
+                    選択中: {options.find(o => o.id === localValue)?.label || savedName}
                 </p>
             )}
         </div>

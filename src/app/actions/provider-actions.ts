@@ -90,9 +90,13 @@ export async function updateStoreSecretsAction(storeId: string, secrets: {
     openai_api_key?: string,
     meta_access_token?: string,
     meta_ad_account_id?: string,
+    meta_ad_account_name?: string,
     meta_campaign_id?: string,
+    meta_campaign_name?: string,
     ga4_property_id?: string,
-    gbp_location_id?: string
+    ga4_property_name?: string,
+    gbp_location_id?: string,
+    gbp_location_name?: string
 }) {
     const supabase = await getSupabase()
     const { data: { user } } = await supabase.auth.getUser()
@@ -110,11 +114,23 @@ export async function updateStoreSecretsAction(storeId: string, secrets: {
     // But here we probably want to allow clearing if explicitly passed as empty string?
     // Let's assume empty string means "clear", undefined means "no change".
     const updates: any = {}
+
+    // API Keys
+    if (secrets.gemini_api_key !== undefined) updates.gemini_api_key = secrets.gemini_api_key
+    if (secrets.openai_api_key !== undefined) updates.openai_api_key = secrets.openai_api_key
+
+    // Meta
     if (secrets.meta_access_token !== undefined) updates.meta_access_token = secrets.meta_access_token
     if (secrets.meta_ad_account_id !== undefined) updates.meta_ad_account_id = secrets.meta_ad_account_id
-    if (secrets.meta_campaign_id !== undefined) updates.meta_campaign_id = secrets.meta_campaign_id // Added campaign ID
+    if (secrets.meta_ad_account_name !== undefined) updates.meta_ad_account_name = secrets.meta_ad_account_name
+    if (secrets.meta_campaign_id !== undefined) updates.meta_campaign_id = secrets.meta_campaign_id
+    if (secrets.meta_campaign_name !== undefined) updates.meta_campaign_name = secrets.meta_campaign_name
+
+    // Google
     if (secrets.ga4_property_id !== undefined) updates.ga4_property_id = secrets.ga4_property_id
+    if (secrets.ga4_property_name !== undefined) updates.ga4_property_name = secrets.ga4_property_name
     if (secrets.gbp_location_id !== undefined) updates.gbp_location_id = secrets.gbp_location_id
+    if (secrets.gbp_location_name !== undefined) updates.gbp_location_name = secrets.gbp_location_name
 
     const { error } = await supabase
         .from('stores')
