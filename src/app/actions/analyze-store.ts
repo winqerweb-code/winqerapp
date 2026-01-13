@@ -20,7 +20,8 @@ export async function analyzeStore(
         targetAudience: string
         cvLabel: string // New param
         ga4CvEvent: string // New param
-    }
+    },
+    storeId?: string // New param for Refresh Token Lookup
 ) {
     console.log('🤖 [AI Analysis] Starting analysis for:', storeName)
     console.log('🔑 [Server] OpenAI Key received:', openaiApiKey ? 'YES' : 'NO')
@@ -131,30 +132,66 @@ export async function analyzeStore(
     const ga4CvEvent = additionalParams?.ga4CvEvent || 'purchase'
 
     try {
-        if (accessToken) {
+        let validAccessToken = accessToken
+
+        // Refresh Token Logic
+        if (!validAccessToken && storeId) {
+            console.log('🔄 [GA4] Access token missing, attempting refresh via Store ID:', storeId)
+            try {
+                const { getSupabase } = await import('@/lib/supabase-server')
+                const supabase = await getSupabase()
+                const { data: store, error } = await supabase
+                    .from('stores')
+                    .select('google_refresh_token')
+                    .eq('id', storeId)
+                    .single()
+
+                if (store?.google_refresh_token) {
+                    const { refreshGoogleAccessToken } = await import('@/lib/google-api')
+                    const refreshed = await refreshGoogleAccessToken(store.google_refresh_token)
+                    if (refreshed?.accessToken) {
+                        console.log('✅ [GA4] Token refreshed successfully')
+                        validAccessToken = refreshed.accessToken
+                    }
+                } else {
+                    console.warn('⚠️ [GA4] No refresh token found for store')
+                }
+            } catch (refreshError) {
+                console.error('❌ [GA4] Token Refresh Failed:', refreshError)
+            }
+        }
+
+        if (validAccessToken) {
             // Use real Google API
             const { GoogleApiClient } = await import('@/lib/google-api')
-            const googleClient = new GoogleApiClient(accessToken)
+            const googleClient = new GoogleApiClient(validAccessToken)
 
             // Fetch data for the last 30 days
             const endDate = new Date().toISOString().split('T')[0]
             const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
-            const report = await googleClient.getGa4Report(ga4PropertyId, { startDate, endDate })
-            ga4Metrics = { ...ga4Metrics, ...report }
+            try {
+                const report = await googleClient.getGa4Report(ga4PropertyId, { startDate, endDate })
+                ga4Metrics = { ...ga4Metrics, ...report }
 
-            // Fetch Specific Event Count
-            const eventCount = await googleClient.getGa4EventCount(ga4PropertyId, ga4CvEvent, { startDate, endDate })
-            ga4Metrics.specificEventCount = eventCount
+                // Fetch Specific Event Count
+                const eventCount = await googleClient.getGa4EventCount(ga4PropertyId, ga4CvEvent, { startDate, endDate })
+                ga4Metrics.specificEventCount = eventCount
 
-            console.log('✅ [GA4] Real data fetched:', ga4Metrics)
+                console.log('✅ [GA4] Real data fetched:', ga4Metrics)
+            } catch (apiError: any) {
+                // If 401, try refresh one more time if we haven't already (simplified: assume we rely on initial check)
+                // For robustness, we could retry here, but let's stick to the flow above for now.
+                console.error('❌ [GA4] API Error:', apiError)
+                throw apiError
+            }
         } else {
             // Fallback to mock
+            console.log('⚠️ [GA4] Using mock data (no access token)')
             const mockData = (MOCK_GA4_REPORT as any)[ga4PropertyId]
             if (mockData) {
                 ga4Metrics = { ...mockData, specificEventCount: 0, screenPageViews: 0, bounceRate: 0 }
             }
-            console.log('⚠️ [GA4] Using mock data (no access token)')
         }
     } catch (error) {
         console.error('❌ [GA4] Data Fetch Error:', error)

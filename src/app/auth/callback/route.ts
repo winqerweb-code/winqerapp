@@ -43,6 +43,19 @@ export async function GET(request: Request) {
                 })
             }
 
+            // Save Google Refresh Token to Cookie (if available, mostly on first login)
+            const refreshToken = data.session?.provider_refresh_token
+            if (refreshToken) {
+                console.log("Saving Google Refresh Token to Cookie")
+                cookieStore.set('google_refresh_token', refreshToken, {
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === 'production',
+                    sameSite: 'lax',
+                    path: '/',
+                    maxAge: 60 * 60 * 24 * 30 // 30 days
+                })
+            }
+
             return NextResponse.redirect(`${origin}${next}`)
         } else {
             console.error('Auth Callback Error:', error)

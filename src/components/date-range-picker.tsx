@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { addDays, format } from "date-fns"
+import { addDays, format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns"
 import { Calendar as CalendarIcon } from "lucide-react"
 import { DateRange } from "react-day-picker"
 
@@ -31,6 +31,34 @@ export function DatePickerWithRange({
     const selectedDate = date || internalDate
     const onSelect = setDate || setInternalDate
 
+    // Preset Options
+    const presets = [
+        {
+            label: "今日",
+            date: { from: new Date(), to: new Date() }
+        },
+        {
+            label: "昨日",
+            date: { from: subDays(new Date(), 1), to: subDays(new Date(), 1) }
+        },
+        {
+            label: "過去7日間",
+            date: { from: subDays(new Date(), 7), to: new Date() }
+        },
+        {
+            label: "過去30日間",
+            date: { from: subDays(new Date(), 30), to: new Date() }
+        },
+        {
+            label: "今月",
+            date: { from: startOfMonth(new Date()), to: endOfMonth(new Date()) }
+        },
+        {
+            label: "先月",
+            date: { from: startOfMonth(subMonths(new Date(), 1)), to: endOfMonth(subMonths(new Date(), 1)) }
+        },
+    ]
+
     return (
         <div className={cn("grid gap-2", className)}>
             <Popover>
@@ -47,11 +75,11 @@ export function DatePickerWithRange({
                         {selectedDate?.from ? (
                             selectedDate.to ? (
                                 <>
-                                    {format(selectedDate.from, "LLL dd, y")} -{" "}
-                                    {format(selectedDate.to, "LLL dd, y")}
+                                    {format(selectedDate.from, "yyyy/MM/dd")} -{" "}
+                                    {format(selectedDate.to, "yyyy/MM/dd")}
                                 </>
                             ) : (
-                                format(selectedDate.from, "LLL dd, y")
+                                format(selectedDate.from, "yyyy/MM/dd")
                             )
                         ) : (
                             <span>Pick a date</span>
@@ -59,14 +87,32 @@ export function DatePickerWithRange({
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                        initialFocus
-                        mode="range"
-                        defaultMonth={selectedDate?.from}
-                        selected={selectedDate}
-                        onSelect={onSelect}
-                        numberOfMonths={2}
-                    />
+                    <div className="flex flex-col sm:flex-row">
+                        <div className="p-3 bg-muted/30 border-r border-border min-w-[140px] space-y-2">
+                            <p className="text-xs font-semibold text-muted-foreground mb-2 px-1">期間を選択</p>
+                            {presets.map((preset) => (
+                                <Button
+                                    key={preset.label}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full justify-start text-xs h-8"
+                                    onClick={() => onSelect(preset.date)}
+                                >
+                                    {preset.label}
+                                </Button>
+                            ))}
+                        </div>
+                        <div className="p-0">
+                            <Calendar
+                                initialFocus
+                                mode="range"
+                                defaultMonth={selectedDate?.from}
+                                selected={selectedDate}
+                                onSelect={onSelect}
+                                numberOfMonths={2}
+                            />
+                        </div>
+                    </div>
                 </PopoverContent>
             </Popover>
         </div>

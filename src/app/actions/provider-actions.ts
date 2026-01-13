@@ -3,6 +3,7 @@
 import { getSupabase } from "@/lib/supabase-server"
 import { isProviderAdmin, verifyStoreAccess } from "@/lib/rbac"
 import { revalidatePath } from "next/cache"
+import { cookies } from "next/headers"
 
 // --- Store Management ---
 
@@ -11,7 +12,7 @@ export async function createStoreAction(name: string, industry?: string) {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user || !(await isProviderAdmin(user.id))) {
-        return { success: false, error: "Unauthorized: Provider Access Required" }
+        return { success: false, error: "権限がありません: プロバイダー権限が必要です" }
     }
 
     const { data, error } = await supabase
@@ -31,7 +32,7 @@ export async function deleteStoreAction(storeId: string) {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user || !(await isProviderAdmin(user.id))) {
-        return { success: false, error: "Unauthorized: Provider Access Required" }
+        return { success: false, error: "権限がありません: プロバイダー権限が必要です" }
     }
 
     const { error } = await supabase
@@ -52,7 +53,7 @@ export async function assignUserToStoreAction(targetUserId: string, storeId: str
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user || !(await isProviderAdmin(user.id))) {
-        return { success: false, error: "Unauthorized: Provider Access Required" }
+        return { success: false, error: "権限がありません: プロバイダー権限が必要です" }
     }
 
     const { error } = await supabase
@@ -69,7 +70,7 @@ export async function removeUserFromStoreAction(targetUserId: string, storeId: s
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user || !(await isProviderAdmin(user.id))) {
-        return { success: false, error: "Unauthorized: Provider Access Required" }
+        return { success: false, error: "権限がありません: プロバイダー権限が必要です" }
     }
 
     const { error } = await supabase
@@ -96,7 +97,8 @@ export async function updateStoreSecretsAction(storeId: string, secrets: {
     ga4_property_id?: string,
     ga4_property_name?: string,
     gbp_location_id?: string,
-    gbp_location_name?: string
+    gbp_location_name?: string,
+    google_refresh_token?: string
 }) {
     const supabase = await getSupabase()
     const { data: { user } } = await supabase.auth.getUser()
@@ -107,7 +109,7 @@ export async function updateStoreSecretsAction(storeId: string, secrets: {
 
     const { hasAccess, role } = await verifyStoreAccess(user.id, storeId)
     if (!hasAccess || (role !== 'STORE_ADMIN' && !(await isProviderAdmin(user.id)))) {
-        return { success: false, error: "Unauthorized: Access Denied" }
+        return { success: false, error: "権限がありません: アクセスが拒否されました" }
     }
 
     // Filter out undefined/empty values to avoid overwriting with null if not intended
@@ -130,7 +132,11 @@ export async function updateStoreSecretsAction(storeId: string, secrets: {
     if (secrets.ga4_property_id !== undefined) updates.ga4_property_id = secrets.ga4_property_id
     if (secrets.ga4_property_name !== undefined) updates.ga4_property_name = secrets.ga4_property_name
     if (secrets.gbp_location_id !== undefined) updates.gbp_location_id = secrets.gbp_location_id
+    if (secrets.gbp_location_id !== undefined) updates.gbp_location_id = secrets.gbp_location_id
     if (secrets.gbp_location_name !== undefined) updates.gbp_location_name = secrets.gbp_location_name
+
+    // Refresh Token
+    if (secrets.google_refresh_token !== undefined) updates.google_refresh_token = secrets.google_refresh_token
 
     const { error } = await supabase
         .from('stores')
@@ -169,7 +175,7 @@ export async function getStoreAssignmentsAction(storeId: string) {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user || !(await isProviderAdmin(user.id))) {
-        return { success: false, error: "Unauthorized: Provider Access Required" }
+        return { success: false, error: "権限がありません: プロバイダー権限が必要です" }
     }
 
     const { data, error } = await supabase
@@ -195,7 +201,7 @@ export async function assignUserByEmailAction(email: string, storeId: string, ro
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user || !(await isProviderAdmin(user.id))) {
-        return { success: false, error: "Unauthorized: Provider Access Required" }
+        return { success: false, error: "権限がありません: プロバイダー権限が必要です" }
     }
 
     // 1. Find user by email
@@ -240,7 +246,7 @@ export async function getStoreMetaAdAccountsAction(storeId: string) {
         .single()
 
     if (storeError || !store?.meta_access_token) {
-        return { success: false, error: "Meta Access Token not found for this store" }
+        return { success: false, error: "この店舗のMetaアクセストークンが見つかりません" }
     }
 
     // 2. Fetch Ad Accounts using the token
@@ -279,7 +285,7 @@ export async function getStoreMetaCampaignsAction(storeId: string, adAccountId: 
         .single()
 
     if (storeError || !store?.meta_access_token) {
-        return { success: false, error: "Meta Access Token not found for this store" }
+        return { success: false, error: "この店舗のMetaアクセストークンが見つかりません" }
     }
 
     // 2. Fetch Campaigns using the token and adAccountId
@@ -291,4 +297,101 @@ export async function getStoreMetaCampaignsAction(storeId: string, adAccountId: 
         console.error("Meta Fetch Error (Campaigns):", error)
         return { success: false, error: error.message || "Failed to fetch campaigns" }
     }
+}
+
+export async function getGoogleRefreshTokenFromCookie() {
+    const cookieStore = cookies()
+    const refreshToken = cookieStore.get('google_refresh_token')
+    return refreshToken?.value || null
+}
+
+// --- Provider Admin Management ---
+
+export async function getProviderAdminsAction() {
+    const supabase = await getSupabase()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user || !(await isProviderAdmin(user.id))) {
+        return { success: false, error: "権限がありません: プロバイダー権限が必要です" }
+    }
+
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('id, email, role')
+        .eq('role', 'PROVIDER_ADMIN')
+
+    if (error) return { success: false, error: error.message }
+
+    return { success: true, admins: data }
+}
+
+export async function assignProviderAdminAction(email: string) {
+    const supabase = await getSupabase()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user || !(await isProviderAdmin(user.id))) {
+        return { success: false, error: "権限がありません: プロバイダー権限が必要です" }
+    }
+
+    // 1. Find user by email
+    const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .single()
+
+    if (profileError || !profile) {
+        return {
+            success: false,
+            error: "ユーザーが見つかりません (プロフィールが存在しません)"
+        }
+    }
+
+    // 2. Update role
+    const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ role: 'PROVIDER_ADMIN' })
+        .eq('id', profile.id)
+
+    if (updateError) return { success: false, error: updateError.message }
+
+    // 3. Audit Log
+    await supabase.from('audit_logs').insert({
+        actor_id: user.id,
+        target_user_id: profile.id,
+        action: 'GRANT_PROVIDER_ADMIN',
+        details: { target_email: email }
+    })
+
+    return { success: true }
+}
+
+export async function removeProviderAdminAction(targetUserId: string) {
+    const supabase = await getSupabase()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user || !(await isProviderAdmin(user.id))) {
+        return { success: false, error: "権限がありません: プロバイダー権限が必要です" }
+    }
+
+    if (user.id === targetUserId) {
+        return { success: false, error: "自分自身の権限を削除することはできません" }
+    }
+
+    const { error } = await supabase
+        .from('profiles')
+        .update({ role: null }) // Or whatever default role is appropriate, null implies no specific administrative role
+        .eq('id', targetUserId)
+
+    if (error) return { success: false, error: error.message }
+
+    // Audit Log
+    await supabase.from('audit_logs').insert({
+        actor_id: user.id,
+        target_user_id: targetUserId,
+        action: 'REVOKE_PROVIDER_ADMIN',
+        details: {}
+    })
+
+    return { success: true }
 }

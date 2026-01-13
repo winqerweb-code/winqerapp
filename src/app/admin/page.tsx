@@ -23,16 +23,29 @@ import {
     assignUserByEmailAction,
     getStoreMetaAdAccountsAction,
     getStoreMetaCampaignsAction,
-    checkAdminStatusAction
+    checkAdminStatusAction,
+    getGoogleRefreshTokenFromCookie,
+    getProviderAdminsAction,
+    assignProviderAdminAction,
+    removeProviderAdminAction
 } from "@/app/actions/provider-actions"
 import { getStores } from "@/app/actions/store"
 import { Store } from "@/types/store"
 import { SecureApiKeyInput } from "@/components/secure-api-key-input"
 import { IdInputWithSelect } from "@/components/id-input-with-select"
-import { Trash2, RefreshCw, Save } from "lucide-react"
+import { Trash2, RefreshCw, Save, Plus, UserPlus } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { GoogleConnectButton } from "@/components/google-connect-button"
 import { supabase } from "@/lib/auth"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
 
 interface UserAssignmentManagerProps {
     storeId: string;
@@ -138,6 +151,108 @@ function UserAssignmentManager({ storeId, storeName }: UserAssignmentManagerProp
     );
 }
 
+function ProviderAdminsManager() {
+    const { toast } = useToast();
+    const [admins, setAdmins] = useState<any[]>([]);
+    const [emailToAssign, setEmailToAssign] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+
+    const fetchAdmins = async () => {
+        setIsLoading(true);
+        const res = await getProviderAdminsAction();
+        if (res.success && res.admins) {
+            setAdmins(res.admins);
+        } else {
+            toast({ title: "エラー", description: res.error, variant: "destructive" });
+        }
+        setIsLoading(false);
+    };
+
+    useEffect(() => {
+        fetchAdmins();
+    }, []);
+
+    const handleAssignAdmin = async () => {
+        if (!emailToAssign) {
+            toast({ title: "入力エラー", description: "メールアドレスを入力してください", variant: "destructive" });
+            return;
+        }
+        if (!confirm("本当にこのユーザーに管理者権限を付与しますか？\n(全ての店舗へのアクセスが可能になります)")) return;
+
+        setIsLoading(true);
+        const res = await assignProviderAdminAction(emailToAssign);
+        if (res.success) {
+            toast({ title: "管理者を追加しました" });
+            setEmailToAssign("");
+            fetchAdmins();
+        } else {
+            toast({ title: "エラー", description: res.error, variant: "destructive" });
+        }
+        setIsLoading(false);
+    };
+
+    const handleRemoveAdmin = async (userId: string) => {
+        if (!confirm("本当にこのユーザーの管理者権限を削除しますか？")) return;
+        setIsLoading(true);
+        const res = await removeProviderAdminAction(userId);
+        if (res.success) {
+            toast({ title: "管理者権限を削除しました" });
+            fetchAdmins();
+        } else {
+            toast({ title: "エラー", description: res.error, variant: "destructive" });
+        }
+        setIsLoading(false);
+    };
+
+    return (
+        <Card className="mt-4">
+            <CardHeader>
+                <CardTitle>全体管理者</CardTitle>
+                <CardDescription>
+                    システム全体の管理権限を持つユーザーを管理します。
+                    <br />
+                    <span className="text-red-500 font-bold">注意: ここに追加されたユーザーは全ての店舗データにアクセスできます。</span>
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex space-x-2 mb-4">
+                    <Input
+                        placeholder="ユーザーのメールアドレス"
+                        value={emailToAssign}
+                        onChange={(e) => setEmailToAssign(e.target.value)}
+                        className="flex-grow bg-background"
+                    />
+                    <Button onClick={handleAssignAdmin} disabled={isLoading}>
+                        {isLoading ? "処理中..." : "管理者を追加"}
+                    </Button>
+                </div>
+                <h3 className="text-lg font-semibold mb-2">現在の管理者</h3>
+                {isLoading ? (
+                    <p>読み込み中...</p>
+                ) : (
+                    <ul className="space-y-2">
+                        {admins.map((admin) => (
+                            <li key={admin.id} className="flex justify-between items-center p-2 border rounded-md">
+                                <div className="flex flex-col">
+                                    <span className="font-medium">{admin.email}</span>
+                                    <span className="text-xs text-muted-foreground">ID: {admin.id}</span>
+                                </div>
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => handleRemoveAdmin(admin.id)}
+                                >
+                                    削除
+                                </Button>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
 export default function AdminDashboard() {
     const { toast } = useToast()
     const [stores, setStores] = useState<Store[]>([])
@@ -154,6 +269,19 @@ export default function AdminDashboard() {
     const [gbpLocations, setGbpLocations] = useState<any[]>([])
     const [ga4Properties, setGa4Properties] = useState<any[]>([])
     const [isLoadingGoogleData, setIsLoadingGoogleData] = useState(false)
+    const [pendingRefreshToken, setPendingRefreshToken] = useState<string | null>(null)
+
+    // Check for pending refresh token in cookie
+    useEffect(() => {
+        const checkRefreshToken = async () => {
+            const token = await getGoogleRefreshTokenFromCookie()
+            if (token) {
+                console.log("Found pending refresh token")
+                setPendingRefreshToken(token)
+            }
+        }
+        checkRefreshToken()
+    }, [])
 
     // Fetch Stores
     useEffect(() => {
@@ -258,6 +386,8 @@ export default function AdminDashboard() {
     }
 
     const [isCreating, setIsCreating] = useState(false)
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+    const [newStoreIndustry, setNewStoreIndustry] = useState("")
 
     const handleCreateStore = async () => {
         if (!newStoreName) {
@@ -270,10 +400,12 @@ export default function AdminDashboard() {
         }
         setIsCreating(true)
         try {
-            const res = await createStoreAction(newStoreName)
+            const res = await createStoreAction(newStoreName, newStoreIndustry)
             if (res.success && res.store) {
                 setStores([...stores, res.store])
                 setNewStoreName("")
+                setNewStoreIndustry("")
+                setIsCreateDialogOpen(false)
                 toast({ title: "店舗を作成しました" })
             } else {
                 toast({ title: "エラー", description: res.error, variant: "destructive" })
@@ -314,265 +446,383 @@ export default function AdminDashboard() {
         }
     }
 
+    // Add Admin State & Handler
+    const [isAddAdminDialogOpen, setIsAddAdminDialogOpen] = useState(false)
+    const [newAdminEmail, setNewAdminEmail] = useState("")
+    const [isAddingAdmin, setIsAddingAdmin] = useState(false)
+
+    const handleAddAdmin = async () => {
+        if (!newAdminEmail) return
+        setIsAddingAdmin(true)
+        try {
+            const res = await assignProviderAdminAction(newAdminEmail)
+            if (res.success) {
+                toast({ title: "管理者を追加しました" })
+                setNewAdminEmail("")
+                setIsAddAdminDialogOpen(false)
+            } else {
+                toast({ title: "エラー", description: res.error, variant: "destructive" })
+            }
+        } catch (error) {
+            toast({ title: "エラー", description: "予期せぬエラーが発生しました", variant: "destructive" })
+        } finally {
+            setIsAddingAdmin(false)
+        }
+    }
+
     return (
         <div className="p-8 space-y-8">
+
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold">管理者ダッシュボード</h1>
                 <div className="flex gap-2">
-                    <Input
-                        placeholder="新規店舗名"
-                        value={newStoreName}
-                        onChange={e => setNewStoreName(e.target.value)}
-                        className="w-64"
-                    />
-                    <Button
-                        onClick={handleCreateStore}
-                        disabled={isCreating}
-                    >
-                        {isCreating ? "作成中..." : "店舗作成"}
-                    </Button>
+                    <Dialog open={isAddAdminDialogOpen} onOpenChange={setIsAddAdminDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline">
+                                <UserPlus className="mr-2 h-4 w-4" />
+                                管理者を招待
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>管理者の招待</DialogTitle>
+                                <DialogDescription>
+                                    システム全体の管理者権限を付与します。
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="admin-email">メールアドレス</Label>
+                                    <Input
+                                        id="admin-email"
+                                        placeholder="user@example.com"
+                                        value={newAdminEmail}
+                                        onChange={(e) => setNewAdminEmail(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsAddAdminDialogOpen(false)}>キャンセル</Button>
+                                <Button onClick={handleAddAdmin} disabled={isAddingAdmin}>
+                                    {isAddingAdmin ? "追加中..." : "追加する"}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button>
+                                <Plus className="mr-2 h-4 w-4" />
+                                店舗を追加
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>新規店舗の作成</DialogTitle>
+                                <DialogDescription>
+                                    新しい店舗を作成します。店舗名と業種を入力してください。
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="name">店舗名</Label>
+                                    <Input
+                                        id="name"
+                                        placeholder="例: Winqer Salon Imj"
+                                        value={newStoreName}
+                                        onChange={(e) => setNewStoreName(e.target.value)}
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="industry">業種</Label>
+                                    <Select value={newStoreIndustry} onValueChange={setNewStoreIndustry}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="業種を選択" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="beauty_salon">美容サロン</SelectItem>
+                                            <SelectItem value="restaurant">飲食店</SelectItem>
+                                            <SelectItem value="retail">小売店</SelectItem>
+                                            <SelectItem value="service">サービス業</SelectItem>
+                                            <SelectItem value="other">その他</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>キャンセル</Button>
+                                <Button onClick={handleCreateStore} disabled={isCreating}>
+                                    {isCreating ? "作成中..." : "作成する"}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </div>
 
             <div className="grid grid-cols-12 gap-6">
-                {/* Store List */}
-                <div className="col-span-4 space-y-4">
-                    <h2 className="text-xl font-semibold">店舗一覧</h2>
-                    {stores.length === 0 && (
-                        <div className="p-4 border border-red-200 bg-red-50 rounded-md text-sm text-red-800">
-                            <p className="font-bold">店舗が見つかりません</p>
-                            <p>権限が不足している可能性があります。</p>
-                            <div className="mt-2 text-xs text-gray-600">
-                                <p>現在のユーザー: {debugInfo.email || "不明"}</p>
-                                <p>現在のロール: {debugInfo.role || "なし (NULL)"}</p>
-                            </div>
-                            {debugInfo.role !== 'PROVIDER_ADMIN' && (
-                                <p className="mt-2 font-mono text-xs bg-white p-1 rounded border">
-                                    Required: PROVIDER_ADMIN
-                                </p>
-                            )}
-                        </div>
-                    )}
-                    {stores.map(store => (
-                        <Card
-                            key={store.id}
-                            className={`cursor-pointer hover:bg-slate-50 ${selectedStoreId === store.id ? 'border-blue-500' : ''}`}
-                            onClick={() => setSelectedStoreId(store.id)}
-                        >
-                            <CardHeader className="p-4">
-                                <CardTitle className="text-base flex justify-between">
-                                    {store.name}
-                                    <Button variant="ghost" size="sm" className="text-red-500 h-6" onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleDeleteStore(store.id)
-                                    }}>削除</Button>
-                                </CardTitle>
-                                <CardDescription>{store.id}</CardDescription>
-                            </CardHeader>
-                        </Card>
-                    ))}
-                </div>
-
-                {/* Selected Store Details */}
-                <div className="col-span-8">
-                    {selectedStoreId ? (
-                        <Tabs defaultValue="secrets">
-                            <TabsList>
-                                <TabsTrigger value="secrets">シークレット・連携</TabsTrigger>
-                                <TabsTrigger value="users">ユーザー割り当て</TabsTrigger>
-                            </TabsList>
-
-                            <TabsContent value="secrets" className="space-y-4 mt-4">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>APIキー & シークレット</CardTitle>
-                                        <CardDescription>この店舗のシークレットを管理します。</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-6">
-                                        {/* AI Keys */}
-                                        <div className="space-y-4">
-                                            <h3 className="font-medium">AI API Keys</h3>
-                                            <SecureApiKeyInput
-                                                label="Gemini API Key"
-                                                onSave={(val) => handleSaveSecret('gemini_api_key', val)}
-                                                fetchStatus={async () => ({ success: true, data: { hasApiKey: false, last4: "****" } })}
-                                                placeholder="AIza..."
-                                            />
-                                            <SecureApiKeyInput
-                                                label="OpenAI API Key"
-                                                onSave={(val) => handleSaveSecret('openai_api_key', val)}
-                                                fetchStatus={async () => ({ success: true, data: { hasApiKey: false, last4: "****" } })}
-                                                placeholder="sk-..."
-                                            />
-                                        </div>
-
-                                        <div className="border-t pt-4 space-y-4">
-                                            <h3 className="font-medium">Meta連携</h3>
-                                            <SecureApiKeyInput
-                                                label="Meta Access Token"
-                                                onSave={(val) => handleSaveSecret('meta_access_token', val)}
-                                                fetchStatus={async () => ({ success: true, data: { hasApiKey: false, last4: "****" } })}
-                                                placeholder="EAA..."
-                                            />
-
-                                            <div className="space-y-4">
-                                                <IdInputWithSelect
-                                                    label="Meta Ad Account ID"
-                                                    value={selectedStore?.meta_ad_account_id || ""}
-                                                    savedName={selectedStore?.meta_ad_account_name}
-                                                    onChange={(val) => {
-                                                        if (selectedStore) {
-                                                            setSelectedStore({ ...selectedStore, meta_ad_account_id: val })
-                                                        }
-                                                    }}
-                                                    showSaveButton={false}
-                                                    options={metaAdAccounts.map((acc: any) => ({
-                                                        id: acc.id,
-                                                        label: acc.name,
-                                                        subLabel: acc.id
-                                                    }))}
-                                                    onFetch={async () => { await fetchMetaAdAccounts() }}
-                                                    isLoadingFetch={isLoadingMetaAccounts}
-                                                    fetchLabel="アカウント取得"
-                                                    placeholder="act_..."
-                                                />
-
-                                                <IdInputWithSelect
-                                                    label="Meta Campaign ID"
-                                                    value={selectedStore?.meta_campaign_id || ""}
-                                                    savedName={selectedStore?.meta_campaign_name}
-                                                    onChange={(val) => {
-                                                        if (selectedStore) {
-                                                            setSelectedStore({ ...selectedStore, meta_campaign_id: val })
-                                                        }
-                                                    }}
-                                                    showSaveButton={false}
-                                                    options={metaCampaigns.map((camp: any) => ({
-                                                        id: camp.id,
-                                                        label: camp.name,
-                                                        subLabel: camp.status
-                                                    }))}
-                                                    onFetch={async () => { await fetchMetaCampaigns() }}
-                                                    isLoadingFetch={isLoadingMetaCampaigns}
-                                                    fetchLabel="キャンペーン取得"
-                                                    disabled={!selectedStore?.meta_ad_account_id}
-                                                    placeholder="123..."
-                                                />
+                {/* System Admins Section - Always visible to Provider Admins */}
+                <div className="col-span-12 mb-8">
+                    <Tabs defaultValue="store-management">
+                        <TabsList>
+                            <TabsTrigger value="store-management">店舗管理</TabsTrigger>
+                            <TabsTrigger value="system-admins">システム管理者</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="store-management">
+                            <div className="grid grid-cols-12 gap-6 pt-4">
+                                {/* Store List */}
+                                <div className="col-span-4 space-y-4">
+                                    <h2 className="text-xl font-semibold">店舗一覧</h2>
+                                    {stores.length === 0 && (
+                                        <div className="p-4 border border-red-200 bg-red-50 rounded-md text-sm text-red-800">
+                                            <p className="font-bold">店舗が見つかりません</p>
+                                            <p>権限が不足している可能性があります。</p>
+                                            <div className="mt-2 text-xs text-gray-600">
+                                                <p>現在のユーザー: {debugInfo.email || "不明"}</p>
+                                                <p>現在のロール: {debugInfo.role || "なし (NULL)"}</p>
                                             </div>
-                                        </div>
-
-                                        <div className="border-t pt-4 space-y-4">
-                                            <h3 className="font-medium">Google連携</h3>
-                                            <div className="flex items-center gap-4">
-                                                <GoogleConnectButton />
-                                                {isGoogleConnected && <span className="text-sm text-green-600">連携済み</span>}
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <IdInputWithSelect
-                                                    label="GA4 Property ID"
-                                                    value={selectedStore?.ga4_property_id || ""}
-                                                    savedName={selectedStore?.ga4_property_name}
-                                                    onChange={(val) => {
-                                                        if (selectedStore) {
-                                                            setSelectedStore({ ...selectedStore, ga4_property_id: val })
-                                                        }
-                                                    }}
-                                                    showSaveButton={false}
-                                                    options={ga4Properties.map((prop: any) => ({
-                                                        id: prop.name,
-                                                        label: prop.displayName,
-                                                        subLabel: prop.name
-                                                    }))}
-                                                    disabled={!isGoogleConnected}
-                                                    placeholder="properties/..."
-                                                />
-
-                                                <IdInputWithSelect
-                                                    label="GBP Location ID"
-                                                    value={selectedStore?.gbp_location_id || ""}
-                                                    savedName={selectedStore?.gbp_location_name}
-                                                    onChange={(val) => {
-                                                        if (selectedStore) {
-                                                            setSelectedStore({ ...selectedStore, gbp_location_id: val })
-                                                        }
-                                                    }}
-                                                    showSaveButton={false}
-                                                    options={gbpLocations.map((loc: any) => ({
-                                                        id: loc.name,
-                                                        label: loc.title,
-                                                        subLabel: loc.name
-                                                    }))}
-                                                    disabled={!isGoogleConnected}
-                                                    placeholder="locations/..."
-                                                />
-                                            </div>
-
-                                            <div className="pt-6">
-                                                <Button
-                                                    onClick={async () => {
-                                                        if (!selectedStoreId || !selectedStore) return
-
-                                                        // Find names (labels) for selected IDs
-                                                        const metaAdAccountName = metaAdAccounts.find(a => a.id === selectedStore.meta_ad_account_id)?.name
-                                                        const metaCampaignName = metaCampaigns.find(c => c.id === selectedStore.meta_campaign_id)?.name
-                                                        const ga4PropertyName = ga4Properties.find(p => p.name === selectedStore.ga4_property_id)?.displayName
-                                                        const gbpLocationName = gbpLocations.find(l => l.name === selectedStore.gbp_location_id)?.title
-
-                                                        const secrets = {
-                                                            meta_ad_account_id: selectedStore.meta_ad_account_id || "",
-                                                            meta_ad_account_name: metaAdAccountName,
-                                                            meta_campaign_id: selectedStore.meta_campaign_id || "",
-                                                            meta_campaign_name: metaCampaignName,
-                                                            ga4_property_id: selectedStore.ga4_property_id || "",
-                                                            ga4_property_name: ga4PropertyName,
-                                                            gbp_location_id: selectedStore.gbp_location_id || "",
-                                                            gbp_location_name: gbpLocationName
-                                                        }
-
-                                                        const res = await updateStoreSecretsAction(selectedStoreId, secrets)
-                                                        if (res.success) {
-                                                            toast({ title: "設定を保存しました" })
-
-                                                            // FIX: Update local stores state to persist changes when switching
-                                                            const updatedStore = {
-                                                                ...selectedStore,
-                                                                ...secrets
-                                                            }
-                                                            setSelectedStore(updatedStore)
-                                                            setStores(prev => prev.map(s => s.id === selectedStoreId ? { ...s, ...secrets } : s))
-                                                        } else {
-                                                            toast({ title: "保存エラー", description: res.error, variant: "destructive" })
-                                                        }
-                                                    }}
-                                                    className="w-full"
-                                                >
-                                                    <Save className="mr-2 h-4 w-4" />
-                                                    設定を保存
-                                                </Button>
-                                                <p className="text-xs text-muted-foreground mt-2 text-center">
-                                                    ※ APIキー以外の設定（Meta/Google ID等）はこのボタンで一括保存されます。
+                                            {debugInfo.role !== 'PROVIDER_ADMIN' && (
+                                                <p className="mt-2 font-mono text-xs bg-white p-1 rounded border">
+                                                    Required: PROVIDER_ADMIN
                                                 </p>
-                                            </div>
+                                            )}
                                         </div>
-                                    </CardContent>
-                                </Card>
-                            </TabsContent>
+                                    )}
+                                    {stores.map(store => (
+                                        <Card
+                                            key={store.id}
+                                            className={`cursor-pointer hover:bg-slate-50 ${selectedStoreId === store.id ? 'border-blue-500' : ''}`}
+                                            onClick={() => setSelectedStoreId(store.id)}
+                                        >
+                                            <CardHeader className="p-4">
+                                                <CardTitle className="text-base flex justify-between">
+                                                    {store.name}
+                                                    <Button variant="ghost" size="sm" className="text-red-500 h-6" onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        handleDeleteStore(store.id)
+                                                    }}>削除</Button>
+                                                </CardTitle>
+                                                <CardDescription>{store.id}</CardDescription>
+                                            </CardHeader>
+                                        </Card>
+                                    ))}
+                                </div>
 
-                            <TabsContent value="users" className="mt-4">
-                                <UserAssignmentManager
-                                    storeId={selectedStoreId}
-                                    storeName={selectedStore?.name || "選択された店舗"}
-                                />
-                            </TabsContent>
-                        </Tabs>
-                    ) : (
-                        <div className="flex items-center justify-center h-64 text-muted-foreground border-2 border-dashed rounded-lg">
-                            管理する店舗を選択してください
-                        </div>
-                    )}
+                                {/* Selected Store Details */}
+                                <div className="col-span-8">
+                                    {selectedStoreId ? (
+                                        <Tabs defaultValue="secrets">
+                                            <TabsList>
+                                                <TabsTrigger value="secrets">シークレット・連携</TabsTrigger>
+                                                <TabsTrigger value="users">ユーザー割り当て</TabsTrigger>
+                                            </TabsList>
+                                            <TabsContent value="system-admins" className="mt-4">
+                                                <ProviderAdminsManager />
+                                            </TabsContent>
+
+                                            <TabsContent value="secrets" className="space-y-4 mt-4">
+                                                <Card>
+                                                    <CardHeader>
+                                                        <CardTitle>APIキー & シークレット</CardTitle>
+                                                        <CardDescription>この店舗のシークレットを管理します。</CardDescription>
+                                                    </CardHeader>
+                                                    <CardContent className="space-y-6">
+                                                        {/* AI Keys */}
+                                                        <div className="space-y-4">
+                                                            <h3 className="font-medium">AI API Keys</h3>
+                                                            <SecureApiKeyInput
+                                                                label="Gemini API Key"
+                                                                onSave={(val) => handleSaveSecret('gemini_api_key', val)}
+                                                                fetchStatus={async () => ({ success: true, data: { hasApiKey: false, last4: "****" } })}
+                                                                placeholder="AIza..."
+                                                            />
+                                                            <SecureApiKeyInput
+                                                                label="OpenAI API Key"
+                                                                onSave={(val) => handleSaveSecret('openai_api_key', val)}
+                                                                fetchStatus={async () => ({ success: true, data: { hasApiKey: false, last4: "****" } })}
+                                                                placeholder="sk-..."
+                                                            />
+                                                        </div>
+
+                                                        <div className="border-t pt-4 space-y-4">
+                                                            <h3 className="font-medium">Meta連携</h3>
+                                                            <SecureApiKeyInput
+                                                                label="Meta Access Token"
+                                                                onSave={(val) => handleSaveSecret('meta_access_token', val)}
+                                                                fetchStatus={async () => ({ success: true, data: { hasApiKey: false, last4: "****" } })}
+                                                                placeholder="EAA..."
+                                                            />
+
+                                                            <div className="space-y-4">
+                                                                <IdInputWithSelect
+                                                                    label="Meta Ad Account ID"
+                                                                    value={selectedStore?.meta_ad_account_id || ""}
+                                                                    savedName={selectedStore?.meta_ad_account_name}
+                                                                    onChange={(val) => {
+                                                                        if (selectedStore) {
+                                                                            setSelectedStore({ ...selectedStore, meta_ad_account_id: val })
+                                                                        }
+                                                                    }}
+                                                                    showSaveButton={false}
+                                                                    options={metaAdAccounts.map((acc: any) => ({
+                                                                        id: acc.id,
+                                                                        label: acc.name,
+                                                                        subLabel: acc.id
+                                                                    }))}
+                                                                    onFetch={async () => { await fetchMetaAdAccounts() }}
+                                                                    isLoadingFetch={isLoadingMetaAccounts}
+                                                                    fetchLabel="アカウント取得"
+                                                                    placeholder="act_..."
+                                                                />
+
+                                                                <IdInputWithSelect
+                                                                    label="Meta Campaign ID"
+                                                                    value={selectedStore?.meta_campaign_id || ""}
+                                                                    savedName={selectedStore?.meta_campaign_name}
+                                                                    onChange={(val) => {
+                                                                        if (selectedStore) {
+                                                                            setSelectedStore({ ...selectedStore, meta_campaign_id: val })
+                                                                        }
+                                                                    }}
+                                                                    showSaveButton={false}
+                                                                    options={metaCampaigns.map((camp: any) => ({
+                                                                        id: camp.id,
+                                                                        label: camp.name,
+                                                                        subLabel: camp.status
+                                                                    }))}
+                                                                    onFetch={async () => { await fetchMetaCampaigns() }}
+                                                                    isLoadingFetch={isLoadingMetaCampaigns}
+                                                                    fetchLabel="キャンペーン取得"
+                                                                    disabled={!selectedStore?.meta_ad_account_id}
+                                                                    placeholder="123..."
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="border-t pt-4 space-y-4">
+                                                            <h3 className="font-medium">Google連携</h3>
+                                                            <div className="flex items-center gap-4">
+                                                                <GoogleConnectButton />
+                                                                {isGoogleConnected && <span className="text-sm text-green-600">連携済み</span>}
+                                                            </div>
+
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                <IdInputWithSelect
+                                                                    label="GA4 Property ID"
+                                                                    value={selectedStore?.ga4_property_id || ""}
+                                                                    savedName={selectedStore?.ga4_property_name}
+                                                                    onChange={(val) => {
+                                                                        if (selectedStore) {
+                                                                            setSelectedStore({ ...selectedStore, ga4_property_id: val })
+                                                                        }
+                                                                    }}
+                                                                    showSaveButton={false}
+                                                                    options={ga4Properties.map((prop: any) => ({
+                                                                        id: prop.name,
+                                                                        label: prop.displayName,
+                                                                        subLabel: prop.name
+                                                                    }))}
+                                                                    disabled={!isGoogleConnected}
+                                                                    placeholder="properties/..."
+                                                                />
+
+                                                                <IdInputWithSelect
+                                                                    label="GBP Location ID"
+                                                                    value={selectedStore?.gbp_location_id || ""}
+                                                                    savedName={selectedStore?.gbp_location_name}
+                                                                    onChange={(val) => {
+                                                                        if (selectedStore) {
+                                                                            setSelectedStore({ ...selectedStore, gbp_location_id: val })
+                                                                        }
+                                                                    }}
+                                                                    showSaveButton={false}
+                                                                    options={gbpLocations.map((loc: any) => ({
+                                                                        id: loc.name,
+                                                                        label: loc.title,
+                                                                        subLabel: loc.name
+                                                                    }))}
+                                                                    disabled={!isGoogleConnected}
+                                                                    placeholder="locations/..."
+                                                                />
+                                                            </div>
+
+                                                            <div className="pt-6">
+                                                                <Button
+                                                                    onClick={async () => {
+                                                                        if (!selectedStoreId || !selectedStore) return
+
+                                                                        // Find names (labels) for selected IDs
+                                                                        const metaAdAccountName = metaAdAccounts.find(a => a.id === selectedStore.meta_ad_account_id)?.name
+                                                                        const metaCampaignName = metaCampaigns.find(c => c.id === selectedStore.meta_campaign_id)?.name
+                                                                        const ga4PropertyName = ga4Properties.find(p => p.name === selectedStore.ga4_property_id)?.displayName
+                                                                        const gbpLocationName = gbpLocations.find(l => l.name === selectedStore.gbp_location_id)?.title
+
+                                                                        const secrets = {
+                                                                            meta_ad_account_id: selectedStore.meta_ad_account_id || "",
+                                                                            meta_ad_account_name: metaAdAccountName,
+                                                                            meta_campaign_id: selectedStore.meta_campaign_id || "",
+                                                                            meta_campaign_name: metaCampaignName,
+                                                                            ga4_property_id: selectedStore.ga4_property_id || "",
+                                                                            ga4_property_name: ga4PropertyName,
+                                                                            gbp_location_id: selectedStore.gbp_location_id || "",
+                                                                            gbp_location_name: gbpLocationName,
+                                                                            google_refresh_token: pendingRefreshToken || undefined
+                                                                        }
+
+                                                                        const res = await updateStoreSecretsAction(selectedStoreId, secrets)
+                                                                        if (res.success) {
+                                                                            // If we saved the refresh token, clear the pending state to avoid resending? 
+                                                                            // Actually keeping it is fine, it will just overwrite same value.
+                                                                            toast({ title: "設定を保存しました" })
+
+                                                                            // FIX: Update local stores state to persist changes when switching
+                                                                            const updatedStore = {
+                                                                                ...selectedStore,
+                                                                                ...secrets
+                                                                            }
+                                                                            setSelectedStore(updatedStore)
+                                                                            setStores(prev => prev.map(s => s.id === selectedStoreId ? { ...s, ...secrets } : s))
+                                                                        } else {
+                                                                            toast({ title: "保存エラー", description: res.error, variant: "destructive" })
+                                                                        }
+                                                                    }}
+                                                                    className="w-full"
+                                                                >
+                                                                    <Save className="mr-2 h-4 w-4" />
+                                                                    設定を保存
+                                                                </Button>
+                                                                <p className="text-xs text-muted-foreground mt-2 text-center">
+                                                                    ※ APIキー以外の設定（Meta/Google ID等）はこのボタンで一括保存されます。
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            </TabsContent>
+
+                                            <TabsContent value="users" className="mt-4">
+                                                <UserAssignmentManager
+                                                    storeId={selectedStoreId}
+                                                    storeName={selectedStore?.name || "選択された店舗"}
+                                                />
+                                            </TabsContent>
+                                        </Tabs>
+                                    ) : (
+                                        <div className="flex items-center justify-center h-64 text-muted-foreground border-2 border-dashed rounded-lg">
+                                            管理する店舗を選択してください
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                        </TabsContent>
+                        <TabsContent value="system-admins" className="pt-4">
+                            <ProviderAdminsManager />
+                        </TabsContent>
+                    </Tabs>
                 </div>
-            </div>
+            </div >
         </div>
     )
 }

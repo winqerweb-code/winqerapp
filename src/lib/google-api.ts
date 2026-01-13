@@ -507,3 +507,44 @@ export class GoogleApiClient {
 }
 
 export const googleApi = new GoogleApiClient()
+
+export async function refreshGoogleAccessToken(refreshToken: string) {
+    const clientId = process.env.GOOGLE_CLIENT_ID
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET
+
+    if (!clientId || !clientSecret) {
+        throw new Error("Missing Google Client ID or Secret")
+    }
+
+    try {
+        const res = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                client_id: clientId,
+                client_secret: clientSecret,
+                refresh_token: refreshToken,
+                grant_type: 'refresh_token',
+            }),
+        })
+
+        if (!res.ok) {
+            const error = await res.json()
+            console.error('Google Token Refresh Error:', error)
+            throw new Error(`Failed to refresh token: ${error.error_description || res.statusText}`)
+        }
+
+        const data = await res.json()
+        return {
+            accessToken: data.access_token,
+            expiresIn: data.expires_in,
+            // Google doesn't always return a new refresh token, but if it does, we should update it
+            newRefreshToken: data.refresh_token
+        }
+    } catch (error) {
+        console.error('Refresh Token Error:', error)
+        throw error
+    }
+}

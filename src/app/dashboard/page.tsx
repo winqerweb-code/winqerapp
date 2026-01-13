@@ -163,7 +163,8 @@ export default function DashboardPage() {
                     targetAudience,
                     cvLabel,
                     ga4CvEvent
-                }
+                },
+                store.id // Pass Store ID for Refresh Token Lookup
             )
 
             if (result.success) {
