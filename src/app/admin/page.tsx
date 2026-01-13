@@ -435,14 +435,29 @@ export default function AdminDashboard() {
         const res = await updateStoreSecretsAction(selectedStoreId, secrets)
         if (res.success) {
             toast({ title: "設定を保存しました" })
-            // Update local state if needed (e.g. for dropdown value)
+
+            // Sync both selectedStore and stores array
             if (selectedStore) {
-                setSelectedStore({ ...selectedStore, [keyName]: value })
+                const updatedStore = { ...selectedStore, [keyName]: value }
+                setSelectedStore(updatedStore)
+                setStores(prev => prev.map(s => s.id === selectedStoreId ? updatedStore : s))
             }
             return { success: true }
         } else {
             toast({ title: "保存エラー", description: res.error, variant: "destructive" })
             return { success: false, error: res.error }
+        }
+    }
+
+    const checkApiKeyStatus = async (keyName: string) => {
+        const store = stores.find(s => s.id === selectedStoreId)
+        const val = store ? (store as any)[keyName] : null
+        return {
+            success: true,
+            data: {
+                hasApiKey: !!val,
+                last4: val && val.length > 4 ? val.slice(-4) : "****"
+            }
         }
     }
 
@@ -612,7 +627,7 @@ export default function AdminDashboard() {
                                 {/* Selected Store Details */}
                                 <div className="col-span-8">
                                     {selectedStoreId ? (
-                                        <Tabs defaultValue="secrets">
+                                        <Tabs defaultValue="secrets" key={selectedStoreId}>
                                             <TabsList>
                                                 <TabsTrigger value="secrets">シークレット・連携</TabsTrigger>
                                                 <TabsTrigger value="users">ユーザー割り当て</TabsTrigger>
@@ -634,13 +649,13 @@ export default function AdminDashboard() {
                                                             <SecureApiKeyInput
                                                                 label="Gemini API Key"
                                                                 onSave={(val) => handleSaveSecret('gemini_api_key', val)}
-                                                                fetchStatus={async () => ({ success: true, data: { hasApiKey: false, last4: "****" } })}
+                                                                fetchStatus={() => checkApiKeyStatus('gemini_api_key')}
                                                                 placeholder="AIza..."
                                                             />
                                                             <SecureApiKeyInput
                                                                 label="OpenAI API Key"
                                                                 onSave={(val) => handleSaveSecret('openai_api_key', val)}
-                                                                fetchStatus={async () => ({ success: true, data: { hasApiKey: false, last4: "****" } })}
+                                                                fetchStatus={() => checkApiKeyStatus('openai_api_key')}
                                                                 placeholder="sk-..."
                                                             />
                                                         </div>
@@ -650,7 +665,7 @@ export default function AdminDashboard() {
                                                             <SecureApiKeyInput
                                                                 label="Meta Access Token"
                                                                 onSave={(val) => handleSaveSecret('meta_access_token', val)}
-                                                                fetchStatus={async () => ({ success: true, data: { hasApiKey: false, last4: "****" } })}
+                                                                fetchStatus={() => checkApiKeyStatus('meta_access_token')}
                                                                 placeholder="EAA..."
                                                             />
 
