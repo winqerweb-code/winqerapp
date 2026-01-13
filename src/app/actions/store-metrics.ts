@@ -158,8 +158,9 @@ export async function getStoreMetrics(
             const googleClient = new GoogleApiClient(effectiveGoogleToken)
 
             // Fetch Total for "予約" (Reservation) related events
-            // User Request: "conversionsをアナリティクスの予約ってつくイベントの合計にして"
-            const searchString = "予約"
+            // Fetch Total for "予約" (Reservation) related events or user defined event
+            // User Request: "conversionsをアナリティクスの予約ってつくイベントの合計にして" -> Now using config
+            const searchString = cvEventName || "予約"
             console.log('🔍 [StoreMetrics] Fetching events containing:', searchString)
             const eventCount = await googleClient.getGa4EventsContaining(ga4PropertyId, searchString, { startDate, endDate })
             console.log('✅ [StoreMetrics] Event count for "予約":', eventCount)
@@ -171,8 +172,13 @@ export async function getStoreMetrics(
             // Mock Data
             ga4Metrics.specificEventCount = 0
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error('❌ [GA4] Dashboard Fetch Error:', error)
+        if (error.message?.includes('401') || error.message?.includes('UNAUTHENTICATED')) {
+            return { success: false, error: 'Google連携の有効期限が切れています。設定画面で再連携してください。' }
+        }
+        // Fail hard for now if GA4 fails, to alert user
+        return { success: false, error: `GA4データの取得に失敗しました: ${error.message}` }
     }
 
     // 3. Merge Daily Data
