@@ -135,8 +135,15 @@ export async function getStoreMetrics(
                 })
             }
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error('❌ [Meta] Dashboard Fetch Error:', error)
+        // Ensure we propagate valid token errors
+        if (error.message?.includes('Session has expired') || error.message?.includes('Invalid OAuth access token')) {
+            return { success: false, error: 'Meta連携の有効期限が切れています。設定画面で再連携してください。' }
+        }
+        // For other errors, we might still want to return partially (e.g. if GA4 works) 
+        // OR return the specific error. Let's return error for now to help debugging.
+        return { success: false, error: `Meta広告データの取得に失敗しました: ${error.message}` }
     }
 
     // 2. Fetch GA4 Data

@@ -70,6 +70,7 @@ export default function DashboardPage() {
     useEffect(() => {
         const fetchMetrics = async () => {
             if (!selectedStore) return
+            setMetrics(null) // Reset metrics to show loading state
             setLoading(true)
             try {
                 const store = selectedStore
@@ -100,9 +101,20 @@ export default function DashboardPage() {
 
                 if (result.success) {
                     setMetrics(result.metrics)
+                } else {
+                    toast({
+                        title: "データ取得エラー",
+                        description: `データの取得に失敗しました: ${result.error}`,
+                        variant: "destructive"
+                    })
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Failed to fetch metrics", error)
+                toast({
+                    title: "エラー",
+                    description: "予期せぬエラーが発生しました",
+                    variant: "destructive"
+                })
             } finally {
                 setLoading(false)
             }
