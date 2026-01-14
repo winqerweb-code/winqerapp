@@ -35,6 +35,21 @@ export async function getStoreMetrics(
         effectiveGoogleToken = cookieStore.get('google_access_token')?.value
     }
 
+    // Pre-emptive Refresh: If no access token but we have a refresh token, get a new access token
+    if (!effectiveGoogleToken && googleRefreshToken) {
+        console.log('🔄 [GA4] No access token found, but refresh token exists. Refreshing...')
+        try {
+            const { refreshGoogleAccessToken } = await import('@/lib/google-api')
+            const newTokens = await refreshGoogleAccessToken(googleRefreshToken)
+            if (newTokens?.accessToken) {
+                effectiveGoogleToken = newTokens.accessToken
+                console.log('✅ [GA4] Access token refreshed successfully from store-metrics.')
+            }
+        } catch (e) {
+            console.warn('⚠️ [GA4] Failed to pre-refresh token:', e)
+        }
+    }
+
     // 1. Fetch Meta Ads Data
     let metaMetrics = {
         spend: 0,
