@@ -302,10 +302,25 @@ export default function AdminDashboard() {
         if (selectedStoreId) {
             const store = stores.find(s => s.id === selectedStoreId)
             setSelectedStore(store || null)
+
+            // Auto-save pending refresh token if store doesn't have one
+            if (store && pendingRefreshToken && !store.google_refresh_token) {
+                console.log("Auto-saving pending refresh token to store:", store.name)
+                updateStoreSecretsAction(store.id, { google_refresh_token: pendingRefreshToken })
+                    .then(res => {
+                        if (res.success) {
+                            toast({ title: "Google連携情報を自動保存しました" })
+                            // Update local state
+                            const updated = { ...store, google_refresh_token: pendingRefreshToken }
+                            setSelectedStore(updated)
+                            setStores(prev => prev.map(s => s.id === store.id ? updated : s))
+                        }
+                    })
+            }
         } else {
             setSelectedStore(null)
         }
-    }, [selectedStoreId, stores])
+    }, [selectedStoreId, stores, pendingRefreshToken])
 
     // Google Auth Check
     useEffect(() => {
