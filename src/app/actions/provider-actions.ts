@@ -356,12 +356,17 @@ export async function assignProviderAdminAction(email: string) {
     if (updateError) return { success: false, error: updateError.message }
 
     // 3. Audit Log
-    await supabase.from('audit_logs').insert({
-        actor_id: user.id,
-        target_user_id: profile.id,
-        action: 'GRANT_PROVIDER_ADMIN',
-        details: { target_email: email }
-    })
+    try {
+        await supabase.from('audit_logs').insert({
+            actor_id: user.id,
+            target_user_id: profile.id,
+            action: 'GRANT_PROVIDER_ADMIN',
+            details: { target_email: email }
+        })
+    } catch (auditError) {
+        console.error("Audit Log Error:", auditError)
+        // Do not fail the main action if audit logging fails
+    }
 
     return { success: true }
 }
@@ -386,12 +391,16 @@ export async function removeProviderAdminAction(targetUserId: string) {
     if (error) return { success: false, error: error.message }
 
     // Audit Log
-    await supabase.from('audit_logs').insert({
-        actor_id: user.id,
-        target_user_id: targetUserId,
-        action: 'REVOKE_PROVIDER_ADMIN',
-        details: {}
-    })
+    try {
+        await supabase.from('audit_logs').insert({
+            actor_id: user.id,
+            target_user_id: targetUserId,
+            action: 'REVOKE_PROVIDER_ADMIN',
+            details: {}
+        })
+    } catch (auditError) {
+        console.error("Audit Log Error:", auditError)
+    }
 
     return { success: true }
 }
