@@ -10,6 +10,7 @@ import { DatePickerWithRange } from "@/components/date-range-picker"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getStores } from "@/app/actions/store"
 import { getStoreMetrics } from "@/app/actions/store-metrics"
+import { updateStoreSecretsAction, getGoogleRefreshTokenFromCookie } from "@/app/actions/provider-actions"
 import { Store } from "@/types/store"
 import { addDays } from "date-fns"
 import { DateRange } from "react-day-picker"
@@ -65,6 +66,30 @@ export default function DashboardPage() {
         }
         fetchStores()
     }, [])
+
+    // Sync Google Refresh Token (Auto-Save for Provider Admins)
+    useEffect(() => {
+        const syncToken = async () => {
+            if (!selectedStore) return;
+            try {
+                const refreshToken = await getGoogleRefreshTokenFromCookie();
+                if (refreshToken && !selectedStore.google_refresh_token) {
+                    console.log("🔄 [Dashboard] Found floating refresh token. Auto-saving to store:", selectedStore.name);
+                    const res = await updateStoreSecretsAction(selectedStore.id, { google_refresh_token: refreshToken });
+                    if (res.success) {
+                        toast({ title: "Google連携を同期しました", description: "他の管理者もデータを閲覧できるようになりました。" });
+                        // Update local store state to prevent loop
+                        const updated = { ...selectedStore, google_refresh_token: refreshToken };
+                        setSelectedStore(updated);
+                        setStores((prev: Store[]) => prev.map((s: Store) => s.id === updated.id ? updated : s));
+                    }
+                }
+            } catch (e) {
+                console.error("Token sync failed", e);
+            }
+        };
+        syncToken();
+    }, [selectedStore]);
 
     // Fetch Metrics when Store or Date Range Changes
     useEffect(() => {
