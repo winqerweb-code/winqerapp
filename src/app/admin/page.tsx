@@ -29,6 +29,7 @@ import {
     assignProviderAdminAction,
     removeProviderAdminAction
 } from "@/app/actions/provider-actions"
+import { getStoreGoogleDataAction } from "@/app/actions/google-data"
 import { getStores } from "@/app/actions/store"
 import { Store } from "@/types/store"
 import { SecureApiKeyInput } from "@/components/secure-api-key-input"
@@ -368,6 +369,28 @@ export default function AdminDashboard() {
             setIsLoadingGoogleData(false)
         }
     }
+
+    // New Effect: Fetch Google Data via Server Action if Store has token but Session doesn't
+    useEffect(() => {
+        const loadStoredGoogleData = async () => {
+            if (selectedStoreId && selectedStore?.google_refresh_token && !isGoogleConnected) {
+                console.log("Fetching Google Data using stored Refresh Token...")
+                setIsLoadingGoogleData(true)
+                const res = await getStoreGoogleDataAction(selectedStoreId)
+                setIsLoadingGoogleData(false)
+
+                if (res.success) {
+                    if (res.locations) setGbpLocations(res.locations)
+                    if (res.properties) setGa4Properties(res.properties)
+                    toast({ title: "連携済みデータを読み込みました" })
+                } else {
+                    console.error("Stored Google Data Fetch Failed:", res.error)
+                    // Optionally toast error, but maybe silent fail is better if just browsing?
+                }
+            }
+        }
+        loadStoredGoogleData()
+    }, [selectedStoreId, selectedStore?.google_refresh_token, isGoogleConnected])
 
     const fetchMetaAdAccounts = async () => {
         if (!selectedStoreId) return
@@ -766,7 +789,7 @@ export default function AdminDashboard() {
                                                                         label: prop.displayName,
                                                                         subLabel: prop.name
                                                                     }))}
-                                                                    disabled={!isGoogleConnected}
+                                                                    disabled={!isGoogleConnected && !selectedStore?.google_refresh_token}
                                                                     placeholder="properties/..."
                                                                 />
 
@@ -785,7 +808,7 @@ export default function AdminDashboard() {
                                                                         label: loc.title,
                                                                         subLabel: loc.name
                                                                     }))}
-                                                                    disabled={!isGoogleConnected}
+                                                                    disabled={!isGoogleConnected && !selectedStore?.google_refresh_token}
                                                                     placeholder="locations/..."
                                                                 />
                                                             </div>
