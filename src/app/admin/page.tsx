@@ -501,7 +501,9 @@ export default function AdminDashboard() {
 
     // Add Admin State & Handler
     const [isAddAdminDialogOpen, setIsAddAdminDialogOpen] = useState(false)
+    const [newAdminEmail, setNewAdminEmail] = useState("")
     const [newAdminPassword, setNewAdminPassword] = useState("")
+    const [isAddingAdmin, setIsAddingAdmin] = useState(false)
 
     const handleAddAdmin = async () => {
         if (!newAdminEmail) return
