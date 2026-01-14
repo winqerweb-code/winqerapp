@@ -20,6 +20,7 @@ export async function getStoreMetrics(
     metaAccessToken?: string,
     cvEventName: string = 'フッター予約リンク',
     adAccountId?: string,
+    googleRefreshToken?: string, // Add refresh token param
     dateRange?: { from: Date, to: Date } // New optional param
 ) {
     // Determine Date Range (Default: Last 30 days)
@@ -174,11 +175,53 @@ export async function getStoreMetrics(
         }
     } catch (error: any) {
         console.error('❌ [GA4] Dashboard Fetch Error:', error)
-        if (error.message?.includes('401') || error.message?.includes('UNAUTHENTICATED')) {
-            return { success: false, error: 'Google連携の有効期限が切れています。設定画面で再連携してください。' }
+
+        const isAuthError = error.message?.includes('401') || error.message?.includes('UNAUTHENTICATED')
+
+        if (isAuthError) {
+            // Try to refresh token if available
+            if (googleRefreshToken) {
+                console.log('🔄 [GA4] Attempting to refresh Google Access Token...')
+                try {
+                    const { refreshGoogleAccessToken } = await import('@/lib/google-api')
+                    const newTokens = await refreshGoogleAccessToken(googleRefreshToken)
+
+                    if (newTokens && newTokens.accessToken) {
+                        console.log('✅ [GA4] Token refreshed successfully. Retrying fetch with new token.')
+                        effectiveGoogleToken = newTokens.accessToken
+
+                        // Retry Fetch with new token
+                        const { GoogleApiClient } = await import('@/lib/google-api')
+                        const googleClient = new GoogleApiClient(effectiveGoogleToken)
+
+                        const searchString = cvEventName || "予約"
+                        const eventCount = await googleClient.getGa4EventsContaining(ga4PropertyId, searchString, { startDate, endDate })
+                        ga4Metrics.specificEventCount = eventCount
+
+                        dailyGa4 = await googleClient.getDailyGa4EventsContaining(ga4PropertyId, searchString, { startDate, endDate })
+
+                        // If successful, we might want to update the cookie? 
+                        // Server Actions can't easily set client cookies unless we use cookies().set
+                        // But here we just return the data. The next request might fail again unless we persist it.
+                        // Ideally we should update the session or cookie, but for now let's just make this request succeed.
+                        // We can return the new token to the client if needed, or rely on the fact that we have the refresh token 
+                        // stored securely and can refresh it on demand (though slightly inefficient).
+
+                        // Optionally update DB/Cookie here if possible?
+                        // For now, let's just use it for this request.
+                    } else {
+                        throw new Error("Refreshed token was empty")
+                    }
+                } catch (refreshError) {
+                    console.error('❌ [GA4] Token Refresh Failed:', refreshError)
+                    return { success: false, error: 'Google連携の再認証に失敗しました。設定画面で再連携してください。' }
+                }
+            } else {
+                return { success: false, error: 'Google連携の有効期限が切れています。設定画面で再連携してください。' }
+            }
+        } else {
+            return { success: false, error: `GA4データの取得に失敗しました: ${error.message}` }
         }
-        // Fail hard for now if GA4 fails, to alert user
-        return { success: false, error: `GA4データの取得に失敗しました: ${error.message}` }
     }
 
     // 3. Merge Daily Data

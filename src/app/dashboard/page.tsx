@@ -94,6 +94,7 @@ export default function DashboardPage() {
                     store.meta_access_token || metaToken || undefined, // Use DB token first, then localStorage fallback
                     store.cv_event_name || '',
                     store.meta_ad_account_id, // Pass the saved Ad Account ID
+                    store.google_refresh_token, // Pass Refresh Token for GA4
                     dateRange && dateRange.from && dateRange.to ? { from: dateRange.from, to: dateRange.to } : undefined
                 )
 
