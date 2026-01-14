@@ -734,7 +734,20 @@ export default function AdminDashboard() {
                                                             <h3 className="font-medium">Google連携</h3>
                                                             <div className="flex items-center gap-4">
                                                                 <GoogleConnectButton />
-                                                                {isGoogleConnected && <span className="text-sm text-green-600">連携済み</span>}
+                                                                {(isGoogleConnected || selectedStore?.google_refresh_token) ? (
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-sm text-green-600 font-bold">
+                                                                            {selectedStore?.google_refresh_token ? "連携済み (保存済み)" : "連携済み (未保存)"}
+                                                                        </span>
+                                                                        {!isGoogleConnected && (
+                                                                            <span className="text-xs text-muted-foreground">
+                                                                                ※設定を変更するには、再度ボタンから連携してください
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-sm text-gray-500">未連携</span>
+                                                                )}
                                                             </div>
 
                                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
