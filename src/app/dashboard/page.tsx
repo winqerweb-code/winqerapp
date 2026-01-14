@@ -114,6 +114,7 @@ export default function DashboardPage() {
                 })
 
                 const result = await getStoreMetrics(
+                    store.id, // Pass Store ID for Caching
                     store.meta_campaign_id || 'none',
                     store.ga4_property_id || '',
                     googleToken || undefined,
