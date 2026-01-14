@@ -30,7 +30,7 @@ export function FunnelChart({ data, height = 350 }: FunnelChartProps) {
 
     const stages = [
         { label: "認知", subLabel: "Impressions", value: getValue(0, "Impressions"), color: "#22d3ee" }, // Cyan-400
-        { label: "興味・関心", subLabel: "Clicks", value: getValue(1, "Clicks"), color: "#0ea5e9" }, // Sky-500
+        { label: "興味・関心", subLabel: "Reach", value: getValue(1, "Reach"), color: "#0ea5e9" }, // Changed to Reach
         { label: "比較・検討", subLabel: "Sessions", value: getValue(2, "Sessions"), color: "#0284c7" }, // Sky-600
         { label: "購入", subLabel: "Conversions", value: getValue(3, "Conversions"), color: "#0c4a6e" }, // Sky-900
     ]

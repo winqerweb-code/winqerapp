@@ -157,6 +157,38 @@ export const metaApiServer = {
             console.warn("Meta API Error (Region Insights):", e)
             return []
         }
+
+    },
+
+    getAccountInsights: async (accessToken: string, adAccountId: string, dateRange: { startDate: string, endDate: string }, campaignId?: string) => {
+        try {
+            // Fetch aggregated data for the period to get unique Reach
+            const fields = "reach,frequency,impressions,spend,clicks,actions"
+            let url = `https://graph.facebook.com/v18.0/${adAccountId}/insights?level=account&time_range={'since':'${dateRange.startDate}','until':'${dateRange.endDate}'}&fields=${fields}&access_token=${accessToken}`
+
+            if (campaignId && campaignId !== 'none') {
+                url = `https://graph.facebook.com/v18.0/${campaignId}/insights?time_range={'since':'${dateRange.startDate}','until':'${dateRange.endDate}'}&fields=${fields}&access_token=${accessToken}`
+            }
+
+            const res = await fetch(url)
+            const data = await res.json()
+            if (data.error) throw new Error(data.error.message)
+
+            if (data.data && data.data.length > 0) {
+                const item = data.data[0]
+                return {
+                    reach: Number(item.reach || 0),
+                    frequency: Number(item.frequency || 0),
+                    impressions: Number(item.impressions || 0),
+                    spend: Number(item.spend || 0),
+                    clicks: Number(item.clicks || 0)
+                }
+            }
+            return null
+        } catch (e) {
+            console.warn("Meta API Error (Account Insights):", e)
+            return null
+        }
     },
 }
 
