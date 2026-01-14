@@ -209,15 +209,17 @@ export async function assignUserByEmailAction(email: string, storeId: string, ro
         .from('profiles')
         .select('id')
         .eq('email', email)
-        .single()
+        .maybeSingle()
 
-    if (profileError || !profile) {
+    if (profileError) {
         console.error("User Lookup Error:", profileError)
+        return { success: false, error: `検索エラー: ${profileError.message}` }
+    }
+
+    if (!profile) {
         return {
             success: false,
-            error: profileError
-                ? `検索エラー: ${profileError.message} (Code: ${profileError.code})`
-                : "ユーザーが見つかりません (プロフィールが存在しません)"
+            error: "ユーザーが見つかりません。メールアドレスが正しいか、またはユーザーがアプリに一度ログイン（プロフィール作成）済みか確認してください。"
         }
     }
 
