@@ -81,7 +81,8 @@ export default function DashboardPage() {
                         // Update local store state to prevent loop
                         const updated = { ...selectedStore, google_refresh_token: refreshToken };
                         setSelectedStore(updated);
-                        setStores((prev: Store[]) => prev.map((s: Store) => s.id === updated.id ? updated : s));
+                        const newStores = stores.map(s => s.id === updated.id ? updated : s);
+                        setStores(newStores);
                     }
                 }
             } catch (e) {
