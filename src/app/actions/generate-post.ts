@@ -37,9 +37,20 @@ export async function generateInstagramPost({
         const inputData = strategy?.input_data || {}
         const outputData = strategy?.output_data || {} // The AI generated persona etc
 
-        // 2. Initialize OpenAI
+        // 2. Resolve API Key
+        // Use client-provided key if available (legacy/global), otherwise fallback to Store Secret
+        // Note: Client might send empty string now.
+        const effectiveApiKey = (apiKey && apiKey.trim() !== "")
+            ? apiKey
+            : (store.openai_api_key || "")
+
+        if (!effectiveApiKey) {
+            throw new Error("OpenAI API Key is not configured. Please set it in the Store Settings.")
+        }
+
+        // 3. Initialize OpenAI
         const openai = new OpenAI({
-            apiKey: apiKey,
+            apiKey: effectiveApiKey,
         })
 
         // 3. Construct Prompt

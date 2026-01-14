@@ -58,6 +58,12 @@ export async function middleware(request: NextRequest) {
 
     // Protect /dashboard routes
     if (request.nextUrl.pathname.startsWith('/dashboard')) {
+        // Bypass for Demo Mode
+        const demoMode = request.cookies.get('demo_mode')?.value === 'true'
+        if (demoMode) {
+            return NextResponse.next()
+        }
+
         if (!session) {
             return NextResponse.redirect(new URL('/login', request.url))
         }

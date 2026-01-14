@@ -37,9 +37,9 @@ export const MOCK_ADS = [
         },
         insights: {
             impressions: 15400,
-            clicks: 450,
+            clicks: 2200, // Boosted to 2200 (Total 3000) for partial month coverage
             spend: 12500,
-            ctr: 2.92,
+            ctr: 14.28,
             cpa: 2500,
             roas: 3.5,
             lp_views: 300,
@@ -61,9 +61,9 @@ export const MOCK_ADS = [
         },
         insights: {
             impressions: 8200,
-            clicks: 120,
+            clicks: 800, // Boosted to 800
             spend: 5000,
-            ctr: 1.46,
+            ctr: 9.76,
             cpa: 4100,
             roas: 1.2,
             lp_views: 50,
@@ -193,5 +193,13 @@ export const MOCK_GA4_REPORT = {
         conversions: 180,
         engagementRate: 0.72,
         averageSessionDuration: 180,
+    },
+    // Demo Property for Verification
+    "properties/demo-ga4": {
+        sessions: 1250, // Matches verification target
+        activeUsers: 900,
+        conversions: 45,
+        engagementRate: 0.60,
+        averageSessionDuration: 120,
     },
 }

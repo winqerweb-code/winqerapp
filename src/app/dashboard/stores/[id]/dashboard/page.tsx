@@ -102,21 +102,41 @@ export default function StoreDashboardPage() {
             try {
                 // 1. Get Store Info (Real Data)
                 const storeId = Array.isArray(params.id) ? params.id[0] : params.id
-                const result = await getStore(storeId)
                 let currentStore: Store | null = null
 
-                if (result.success && result.store) {
-                    setStore(result.store)
-                    currentStore = result.store
+                // MOCK / DEMO MODE CHECK
+                if (storeId === 'demo-store') {
+                    // Set a dummy store compatible with our Mock Data in lib/mock-data.ts
+                    currentStore = {
+                        id: 'demo-store',
+                        name: 'デモ店舗 (Test Mode)',
+                        created_at: new Date().toISOString(),
+                        user_id: 'demo-user',
+                        // triggers Meta Mock Logic in getStoreChartData (if campaign matches cam_111)
+                        meta_campaign_ids: ['cam_111'],
+                        // triggers GA4 Mock Logic (matches entry in MOCK_GA4_REPORT)
+                        ga4_property_id: 'properties/demo-ga4',
+                        cv_event_name: '予約'
+                    } as Store
+                    setStore(currentStore)
                 } else {
-                    // Fallback to mock if not found
-                    const foundStore = MOCK_STORES.find((s) => s.id === storeId)
-                    if (foundStore) {
-                        // Cast mock store to Store type (ensure it has required fields or handle missing ones)
-                        currentStore = foundStore as unknown as Store
-                        setStore(currentStore)
+                    const result = await getStore(storeId)
+
+                    if (result.success && result.store) {
+                        setStore(result.store)
+                        currentStore = result.store
                     } else {
-                        setStore({ name: "Unknown Store", id: storeId } as Store)
+                        // Fallback to mock if not found
+                        const foundStore = MOCK_STORES.find((s) => s.id === storeId)
+                        if (foundStore) {
+                            // Cast mock store to Store type ensuring required fields
+                            currentStore = foundStore as unknown as Store
+                            setStore(currentStore)
+                        } else {
+                            // Only set Unknown if we really tried everything
+                            // But for demo purposes, we might want to just show mocks
+                            setStore({ name: "Unknown Store", id: storeId } as Store)
+                        }
                     }
                 }
 
@@ -128,6 +148,8 @@ export default function StoreDashboardPage() {
 
                     const campaignId = currentStore.meta_campaign_id || currentStore.meta_campaign_ids?.[0] || 'none'
 
+                    // Use Server Action (even for Demo Store)
+                    // The server action handles mock logic internally when tokens/properties match mock patterns
                     const chartResult = await getStoreChartData(
                         currentStore.id,
                         campaignId,
@@ -138,8 +160,6 @@ export default function StoreDashboardPage() {
                         currentStore.meta_ad_account_id,
                         dateRange && dateRange.from && dateRange.to ? { from: dateRange.from, to: dateRange.to } : undefined
                     )
-
-
 
                     if (chartResult.success && chartResult.data) {
                         setChartData(chartResult.data)

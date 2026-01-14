@@ -22,6 +22,8 @@ export type Store = {
     // Tokens (Server-side use mostly)
     meta_access_token?: string
     google_refresh_token?: string // Added for permanent GA4/GBP access
+    openai_api_key?: string
+    gemini_api_key?: string
 
     // Analysis Settings
     cv_event_name?: string

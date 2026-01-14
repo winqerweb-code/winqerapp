@@ -92,15 +92,15 @@ export function PostGeneration({ storeId, strategyData }: PostGenerationProps) {
     }
 
     const handleGenerate = async () => {
-        const apiKey = localStorage.getItem("openai_api_key")
-        if (!apiKey) {
-            toast({
-                title: "APIキー未設定",
-                description: "設定画面からOpenAI APIキーを保存してください。",
-                variant: "destructive"
-            })
-            return
-        }
+        const apiKey = localStorage.getItem("openai_api_key") || ""
+        // if (!apiKey) {
+        //     toast({
+        //         title: "APIキー未設定",
+        //         description: "設定画面からOpenAI APIキーを保存してください。",
+        //         variant: "destructive"
+        //     })
+        //     return
+        // }
 
         if (!topic && !imageFile) {
             toast({
