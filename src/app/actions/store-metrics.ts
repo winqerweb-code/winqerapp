@@ -28,25 +28,29 @@ export async function getStoreMetrics(
     const endDate = dateRange?.to ? formatJST(dateRange.to) : formatJST(new Date())
     const startDate = dateRange?.from ? formatJST(dateRange.from) : formatJST(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
 
-    // Fallback to Cookie for Google Token
+    // Fallback to Cookie for Google Token if not provided explicitly
     let effectiveGoogleToken = accessToken
     if (!effectiveGoogleToken) {
         const cookieStore = cookies()
         effectiveGoogleToken = cookieStore.get('google_access_token')?.value
     }
 
-    // Pre-emptive Refresh: If no access token but we have a refresh token, get a new access token
-    if (!effectiveGoogleToken && googleRefreshToken) {
-        console.log('🔄 [GA4] No access token found, but refresh token exists. Refreshing...')
+    // CRITICAL: If a Refresh Token is saved in the Store, we MUST use it to fetch data.
+    // This ensures that the data is fetched on behalf of the connected Store account,
+    // NOT the currently logged-in Admin user (who might be different).
+    // This effectively "decouples" the view from the session user.
+    if (googleRefreshToken) {
+        // console.log('🔄 [GA4] Using Store Refresh Token to ensure correct identity...')
         try {
             const { refreshGoogleAccessToken } = await import('@/lib/google-api')
             const newTokens = await refreshGoogleAccessToken(googleRefreshToken)
             if (newTokens?.accessToken) {
                 effectiveGoogleToken = newTokens.accessToken
-                console.log('✅ [GA4] Access token refreshed successfully from store-metrics.')
+                // console.log('✅ [GA4] Access token generated from Refresh Token.')
             }
         } catch (e) {
-            console.warn('⚠️ [GA4] Failed to pre-refresh token:', e)
+            console.warn('⚠️ [GA4] Failed to refresh token from store:', e)
+            // Fallback to session token if refresh fails (though likely session token won't work either if accounts differ)
         }
     }
 
