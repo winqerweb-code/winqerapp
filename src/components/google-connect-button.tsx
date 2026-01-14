@@ -70,11 +70,13 @@ export function GoogleConnectButton() {
         }
     }
 
-    if (user) {
+    const isGoogleLinked = user?.app_metadata?.providers?.includes('google')
+
+    if (user && isGoogleLinked) {
         return (
             <div className="flex items-center gap-4 p-4 border rounded-md bg-green-50 border-green-200">
                 <div className="flex-1">
-                    <p className="text-sm font-medium text-green-900">Google連携済み</p>
+                    <p className="text-sm font-medium text-green-900">現在のセッション: Google連携中</p>
                     <p className="text-xs text-green-700">{user.email}</p>
                 </div>
                 <Button variant="outline" size="sm" onClick={handleDisconnect} disabled={loading} className="border-green-300 text-green-700 hover:bg-green-100">
