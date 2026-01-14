@@ -327,7 +327,22 @@ export async function getProviderAdminsAction() {
     return { success: true, admins: data }
 }
 
-export async function assignProviderAdminAction(email: string) {
+// Helper to get Admin Client
+function getServiceSupabase() {
+    const { createClient } = require('@supabase/supabase-js')
+    return createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false
+            }
+        }
+    )
+}
+
+export async function assignProviderAdminAction(email: string, password?: string) {
     const supabase = await getSupabase()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -335,39 +350,92 @@ export async function assignProviderAdminAction(email: string) {
         return { success: false, error: "権限がありません: プロバイダー権限が必要です" }
     }
 
-    // 1. Find user by email
-    const { data: profile, error: profileError } = await supabase
+    const adminSupabase = getServiceSupabase()
+
+    // 1. Check if user exists (by email) using Admin API
+    // listUsers doesn't allow filter by email in all versions, but createUser throws if exists
+    // actually admin.listUsers() is pagination based. 
+    // Easier approach: Try to get by email assuming we might need to create.
+    // However, clean way: 
+    // Try to find profile first (as before). If profile exists, user exists in Auth.
+
+    let targetUserId = ""
+
+    // Check Profile
+    const { data: profile } = await supabase
         .from('profiles')
         .select('id')
         .eq('email', email)
         .single()
 
-    if (profileError || !profile) {
-        return {
-            success: false,
-            error: "ユーザーが見つかりません (プロフィールが存在しません)"
+    if (profile) {
+        targetUserId = profile.id
+        // User exists, update password if provided
+        if (password && password.trim() !== "") {
+            const { error: updateAuthError } = await adminSupabase.auth.admin.updateUserById(
+                targetUserId,
+                { password: password }
+            )
+            if (updateAuthError) {
+                return { success: false, error: `パスワード更新失敗: ${updateAuthError.message}` }
+            }
         }
+    } else {
+        // User likely doesn't exist (or profile missing).
+        // Try creating user with Admin API
+        const { data: newUser, error: createError } = await adminSupabase.auth.admin.createUser({
+            email: email,
+            password: password || undefined, // If no password, they must use magic link or OTP login? Or verify email? 
+            // If password provided, they can login.
+            email_confirm: true // Auto confirm
+        })
+
+        if (createError) {
+            // Check if error is "User already registered" - implies profile was missing but Auth User exists 
+            // (shouldn't happen with triggers but possible)
+            return { success: false, error: `ユーザー作成失敗: ${createError.message}` }
+        }
+
+        if (!newUser.user) {
+            return { success: false, error: "ユーザー作成に失敗しました (User object missing)" }
+        }
+        targetUserId = newUser.user.id
+
+        // Profile creation should be handled by Trigger usually, 
+        // but if we need to be sure before updating role:
+        // Wait a bit or manually check/insert?
+        // Let's manually upsert profile to be safe and fast
+        /*
+        const { error: profileError } = await supabase.from('profiles').upsert({
+            id: targetUserId,
+            email: email,
+            role: 'PROVIDER_ADMIN' // Set role immediately
+        })
+        */
+        // Actually, let's fall through to the Role Update logic below, seeing if Trigger worked or if we use upsert there.
     }
 
-    // 2. Update role
+    // 2. Update role (Upserting to ensure Profile exists)
     const { error: updateError } = await supabase
         .from('profiles')
-        .update({ role: 'PROVIDER_ADMIN' })
-        .eq('id', profile.id)
+        .upsert({
+            id: targetUserId,
+            email: email,
+            role: 'PROVIDER_ADMIN'
+        })
 
-    if (updateError) return { success: false, error: updateError.message }
+    if (updateError) return { success: false, error: `権限付与失敗: ${updateError.message}` }
 
     // 3. Audit Log
     try {
         await supabase.from('audit_logs').insert({
             actor_id: user.id,
-            target_user_id: profile.id,
+            target_user_id: targetUserId,
             action: 'GRANT_PROVIDER_ADMIN',
-            details: { target_email: email }
+            details: { target_email: email, password_set: !!password }
         })
     } catch (auditError) {
         console.error("Audit Log Error:", auditError)
-        // Do not fail the main action if audit logging fails
     }
 
     return { success: true }

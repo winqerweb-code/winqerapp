@@ -501,17 +501,17 @@ export default function AdminDashboard() {
 
     // Add Admin State & Handler
     const [isAddAdminDialogOpen, setIsAddAdminDialogOpen] = useState(false)
-    const [newAdminEmail, setNewAdminEmail] = useState("")
-    const [isAddingAdmin, setIsAddingAdmin] = useState(false)
+    const [newAdminPassword, setNewAdminPassword] = useState("")
 
     const handleAddAdmin = async () => {
         if (!newAdminEmail) return
         setIsAddingAdmin(true)
         try {
-            const res = await assignProviderAdminAction(newAdminEmail)
+            const res = await assignProviderAdminAction(newAdminEmail, newAdminPassword)
             if (res.success) {
                 toast({ title: "管理者を追加しました" })
                 setNewAdminEmail("")
+                setNewAdminPassword("")
                 setIsAddAdminDialogOpen(false)
             } else {
                 toast({ title: "エラー", description: res.error, variant: "destructive" })
@@ -540,7 +540,8 @@ export default function AdminDashboard() {
                             <DialogHeader>
                                 <DialogTitle>管理者の招待</DialogTitle>
                                 <DialogDescription>
-                                    システム全体の管理者権限を付与します。
+                                    システム全体の管理者権限を付与します。<br />
+                                    パスワードを入力すると、そのパスワードでログインできるアカウントを作成（または更新）します。
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="grid gap-4 py-4">
@@ -552,6 +553,18 @@ export default function AdminDashboard() {
                                         value={newAdminEmail}
                                         onChange={(e) => setNewAdminEmail(e.target.value)}
                                     />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="admin-password">パスワード（任意）</Label>
+                                    <Input
+                                        id="admin-password"
+                                        type="password"
+                                        placeholder="設定する場合のみ入力"
+                                        value={newAdminPassword}
+                                        onChange={(e) => setNewAdminPassword(e.target.value)}
+                                        minLength={6}
+                                    />
+                                    <p className="text-xs text-muted-foreground">※6文字以上。空白の場合はパスワードを設定しません（既存ユーザーの権限付与のみ）。</p>
                                 </div>
                             </div>
                             <DialogFooter>
