@@ -17,6 +17,7 @@ import { KpiTrend } from "@/components/charts/KpiTrend"
 import { DailySpend } from "@/components/charts/DailySpend"
 import { CreativeComparison } from "@/components/charts/CreativeComparison"
 import { RegionComparison } from "@/components/charts/RegionComparison"
+import { DemographicsCharts } from "@/components/charts/DemographicsCharts"
 import { DatePickerWithRange } from "@/components/date-range-picker"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
@@ -227,6 +228,9 @@ export default function StoreDashboardPage() {
                         <RegionComparison data={chartData?.regionPerformance || MOCK_REGIONS} />
                     )}
                 </div>
+
+                {/* 7. Demographics */}
+                <DemographicsCharts data={chartData?.demographics} />
             </div>
         </div>
     )

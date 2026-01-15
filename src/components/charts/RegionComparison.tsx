@@ -8,6 +8,8 @@ interface RegionComparisonProps {
         region: string
         cvr: number
         cpc: number
+        ctr: number
+        spend: number
     }[]
     height?: number
 }
@@ -52,10 +54,14 @@ export function RegionComparison({ data, height = 300 }: RegionComparisonProps) 
                         <Tooltip
                             cursor={{ fill: 'transparent' }}
                             labelStyle={{ color: "#333" }}
+                            formatter={(value: number, name: string) => [
+                                name === 'CVR' || name === 'CTR' ? `${value}%` : `¥${value.toLocaleString()}`,
+                                name
+                            ]}
                         />
                         <Legend />
-                        <Bar yAxisId="left" dataKey="cvr" name="CVR" fill="#8884d8" radius={[4, 4, 0, 0]} />
-                        <Bar yAxisId="right" dataKey="cpc" name="CPC" fill="#82ca9d" radius={[4, 4, 0, 0]} />
+                        <Bar yAxisId="left" dataKey="ctr" name="CTR" fill="#ffc658" radius={[4, 4, 0, 0]} />
+                        <Bar yAxisId="right" dataKey="spend" name="消化金額" fill="#82ca9d" radius={[4, 4, 0, 0]} />
                     </BarChart>
                 </ResponsiveContainer>
             </CardContent>

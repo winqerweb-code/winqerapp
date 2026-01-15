@@ -84,6 +84,7 @@ export async function getStoreChartData(
     let dailyMeta: any[] = []
     let regionMeta: any[] = []
     let adsMeta: any[] = []
+    let demographicsMeta: any[] = []
     let dailyGa4: any[] = []
     let prevDailyMeta: any[] = []
     let prevDailyGa4: any[] = []
@@ -164,6 +165,19 @@ export async function getStoreChartData(
                 { region: "Fukuoka", spend: totalSpend * 0.1, clicks: totalClicks * 0.1, impressions: totalImpressions * 0.1, conversions: totalConversions * 0.1 },
                 { region: "Nagoya", spend: totalSpend * 0.1, clicks: totalClicks * 0.1, impressions: totalImpressions * 0.1, conversions: totalConversions * 0.1 },
                 { region: "Sapporo", spend: totalSpend * 0.05, clicks: totalClicks * 0.05, impressions: totalImpressions * 0.05, conversions: totalConversions * 0.05 },
+                { region: "Nagoya", spend: totalSpend * 0.1, clicks: totalClicks * 0.1, impressions: totalImpressions * 0.1, conversions: totalConversions * 0.1 },
+                { region: "Sapporo", spend: totalSpend * 0.05, clicks: totalClicks * 0.05, impressions: totalImpressions * 0.05, conversions: totalConversions * 0.05 },
+            ]
+
+            // Mock Demographics Data
+            demographicsMeta = [
+                // Gender: Age breakdown example
+                { gender: "female", age: "25-34", spend: totalSpend * 0.3, clicks: totalClicks * 0.3, impressions: totalImpressions * 0.3 },
+                { gender: "female", age: "35-44", spend: totalSpend * 0.2, clicks: totalClicks * 0.2, impressions: totalImpressions * 0.2 },
+                { gender: "male", age: "25-34", spend: totalSpend * 0.2, clicks: totalClicks * 0.2, impressions: totalImpressions * 0.2 },
+                { gender: "male", age: "35-44", spend: totalSpend * 0.15, clicks: totalClicks * 0.15, impressions: totalImpressions * 0.15 },
+                { gender: "female", age: "45-54", spend: totalSpend * 0.1, clicks: totalClicks * 0.1, impressions: totalImpressions * 0.1 },
+                { gender: "male", age: "45-54", spend: totalSpend * 0.05, clicks: totalClicks * 0.05, impressions: totalImpressions * 0.05 },
             ]
         }
 
@@ -198,15 +212,17 @@ export async function getStoreChartData(
 
             if (targetAccountId) {
                 // Fetch Current Period Data
-                const [daily, region, ads, accountInsights] = await Promise.all([
+                const [daily, region, ads, accountInsights, demographics] = await Promise.all([
                     metaApiServer.getDailyAdsInsights(effectiveMetaToken, targetAccountId, dateParams, metaCampaignId),
                     metaApiServer.getRegionInsights(effectiveMetaToken, targetAccountId, dateParams, metaCampaignId),
                     metaApiServer.getAds(effectiveMetaToken, targetAccountId),
-                    metaApiServer.getAccountInsights(effectiveMetaToken, targetAccountId, dateParams, metaCampaignId)
+                    metaApiServer.getAccountInsights(effectiveMetaToken, targetAccountId, dateParams, metaCampaignId),
+                    metaApiServer.getAgeGenderInsights(effectiveMetaToken, targetAccountId, dateParams, metaCampaignId)
                 ])
                 dailyMeta = daily
                 regionMeta = region
                 currentPeriodInsights = accountInsights
+                demographicsMeta = demographics
 
                 // Filter ads by campaign if needed
                 if (metaCampaignId && metaCampaignId !== 'none') {
@@ -400,8 +416,55 @@ export async function getStoreChartData(
             region: r.region,
             cpa: r.conversions > 0 ? Math.round(r.spend / r.conversions) : 0,
             cvr: r.clicks > 0 ? ((r.conversions / r.clicks) * 100).toFixed(2) : 0,
-            spend: r.spend
+            ctr: r.impressions > 0 ? ((r.clicks / r.impressions) * 100).toFixed(2) : 0,
+            spend: r.spend,
+            clicks: r.clicks,
+            impressions: r.impressions
         }))
+
+    const demographics = processDemographics(demographicsMeta)
+
+    // Helper to process demographics
+    function processDemographics(data: any[]) {
+        // Gender Aggr
+        const genderMap = new Map<string, { spend: number, clicks: number, impressions: number }>()
+        // Age Aggr
+        const ageMap = new Map<string, { spend: number, clicks: number, impressions: number }>()
+
+        data.forEach(d => {
+            // Gender
+            const gKey = d.gender === 'male' ? '男性' : d.gender === 'female' ? '女性' : '不明'
+            const gCurrent = genderMap.get(gKey) || { spend: 0, clicks: 0, impressions: 0 }
+            genderMap.set(gKey, {
+                spend: gCurrent.spend + d.spend,
+                clicks: gCurrent.clicks + d.clicks,
+                impressions: gCurrent.impressions + d.impressions
+            })
+
+            // Age
+            const aKey = d.age
+            const aCurrent = ageMap.get(aKey) || { spend: 0, clicks: 0, impressions: 0 }
+            ageMap.set(aKey, {
+                spend: aCurrent.spend + d.spend,
+                clicks: aCurrent.clicks + d.clicks,
+                impressions: aCurrent.impressions + d.impressions
+            })
+        })
+
+        const gender = Array.from(genderMap.entries()).map(([key, val]) => ({
+            gender: key,
+            spend: val.spend,
+            ctr: val.impressions > 0 ? (val.clicks / val.impressions) * 100 : 0
+        })).sort((a, b) => b.spend - a.spend)
+
+        const age = Array.from(ageMap.entries()).map(([key, val]) => ({
+            age: key,
+            spend: val.spend,
+            ctr: val.impressions > 0 ? (val.clicks / val.impressions) * 100 : 0
+        })).sort((a, b) => a.age.localeCompare(b.age)) // Sort usually by age range string works unless "65+"
+
+        return { gender, age }
+    }
 
     // --- Spend Trend (Monthly) ---
     // For now, we only have current month daily data. 
@@ -499,7 +562,8 @@ export async function getStoreChartData(
             kpiTrend,
             dailySpend,
             creativeRanking,
-            regionPerformance
+            regionPerformance,
+            demographics
         }
     }
 }

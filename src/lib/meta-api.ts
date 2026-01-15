@@ -190,6 +190,39 @@ export const metaApiServer = {
             return null
         }
     },
+
+    getAgeGenderInsights: async (accessToken: string, adAccountId: string, dateRange: { startDate: string, endDate: string }, campaignId?: string) => {
+        try {
+            const fields = "spend,clicks,impressions,actions"
+            let url = `https://graph.facebook.com/v18.0/${adAccountId}/insights?level=account&time_range={'since':'${dateRange.startDate}','until':'${dateRange.endDate}'}&fields=${fields}&breakdowns=age,gender&access_token=${accessToken}`
+
+            if (campaignId && campaignId !== 'none') {
+                url = `https://graph.facebook.com/v18.0/${campaignId}/insights?time_range={'since':'${dateRange.startDate}','until':'${dateRange.endDate}'}&fields=${fields}&breakdowns=age,gender&access_token=${accessToken}`
+            }
+
+            const res = await fetch(url)
+            const data = await res.json()
+            if (data.error) throw new Error(data.error.message)
+
+            return data.data.map((item: any) => {
+                const actions = item.actions || []
+                const lpViewAction = actions.find((a: any) => a.action_type === "landing_page_view")
+                const conversions = Number(lpViewAction?.value || 0)
+
+                return {
+                    age: item.age,
+                    gender: item.gender,
+                    spend: Number(item.spend || 0),
+                    clicks: Number(item.clicks || 0),
+                    impressions: Number(item.impressions || 0),
+                    conversions: conversions
+                }
+            })
+        } catch (e) {
+            console.warn("Meta API Error (Demographics Insights):", e)
+            return []
+        }
+    },
 }
 
 // Original client-side API (uses localStorage)
