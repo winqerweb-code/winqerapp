@@ -231,6 +231,7 @@ export default function StoreDashboardPage() {
 
                 {/* 7. Demographics */}
                 <DemographicsCharts data={chartData?.demographics} />
+                <div className="text-xs text-gray-300 text-center mt-8">v1.1.0 (Detailed Report Update)</div>
             </div>
         </div>
     )
