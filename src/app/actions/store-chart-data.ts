@@ -431,7 +431,7 @@ export async function getStoreChartData(
         // Age Aggr
         const ageMap = new Map<string, { spend: number, clicks: number, impressions: number }>()
 
-        data.forEach(d => {
+        data.forEach((d: any) => {
             // Gender
             const gKey = d.gender === 'male' ? '男性' : d.gender === 'female' ? '女性' : '不明'
             const gCurrent = genderMap.get(gKey) || { spend: 0, clicks: 0, impressions: 0 }
@@ -487,7 +487,7 @@ export async function getStoreChartData(
     }
 
     // Process Meta Data
-    dailyMeta.forEach(d => {
+    dailyMeta.forEach((d: any) => {
         addToMonth(d.date, {
             spend: d.spend,
             cv: d.conversions,
@@ -511,7 +511,7 @@ export async function getStoreChartData(
         // Re-initialize map to be safe or subtract Meta CVs? 
         // Better: Iterate distinct months and set CV based on GA4 totals for that month.
 
-        dailyGa4.forEach(d => {
+        dailyGa4.forEach((d: any) => {
             const month = d.date.substring(0, 7)
             const current = monthlyData.get(month)
             if (current) {
@@ -529,21 +529,21 @@ export async function getStoreChartData(
     // 3. For each month, sum CVs (preferring GA4 if available for that month, else Meta).
 
     const allMonths = new Set<string>()
-    dailyMeta.forEach(d => allMonths.add(d.date.substring(0, 7)))
-    dailyGa4.forEach(d => allMonths.add(d.date.substring(0, 7)))
+    dailyMeta.forEach((d: any) => allMonths.add(d.date.substring(0, 7)))
+    dailyGa4.forEach((d: any) => allMonths.add(d.date.substring(0, 7)))
 
-    const spendTrend = Array.from(allMonths).sort().map(month => {
+    const spendTrend = Array.from(allMonths).sort().map((month: string) => {
         // Filter daily data for this month
-        const metaInMonth = dailyMeta.filter(d => d.date.startsWith(month))
-        const ga4InMonth = dailyGa4.filter(d => d.date.startsWith(month))
+        const metaInMonth = dailyMeta.filter((d: any) => d.date.startsWith(month))
+        const ga4InMonth = dailyGa4.filter((d: any) => d.date.startsWith(month))
 
-        const spend = metaInMonth.reduce((sum, d) => sum + d.spend, 0)
+        const spend = metaInMonth.reduce((sum: number, d: any) => sum + d.spend, 0)
         // const impressions = metaInMonth.reduce((sum, d) => sum + d.impressions, 0)
         // const clicks = metaInMonth.reduce((sum, d) => sum + d.clicks, 0)
 
         const cv = ga4InMonth.length > 0
-            ? ga4InMonth.reduce((sum, d) => sum + d.count, 0)
-            : metaInMonth.reduce((sum, d) => sum + d.conversions, 0)
+            ? ga4InMonth.reduce((sum: number, d: any) => sum + d.count, 0)
+            : metaInMonth.reduce((sum: number, d: any) => sum + d.conversions, 0)
 
         return {
             month,
