@@ -83,6 +83,7 @@ export default function LoginPage() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
+                                className="text-black"
                             />
                             <Input
                                 type="password"
@@ -91,6 +92,7 @@ export default function LoginPage() {
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
                                 minLength={6}
+                                className="text-black"
                             />
                         </div>
 
