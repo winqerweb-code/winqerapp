@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Sparkles, Image as ImageIcon, Copy, Check, Upload, X } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { generateInstagramPost } from "@/app/actions/generate-post"
-import Image from "next/image"
+import NextImage from "next/image"
 
 interface PostGenerationProps {
     storeId: string
@@ -39,6 +39,8 @@ export function PostGeneration({ storeId, strategyData }: PostGenerationProps) {
     }
 
     const handleImageSelect = (file: File) => {
+        if (!file) return
+
         if (!file.type.startsWith('image/')) {
             toast({
                 title: "画像ファイルのみアップロード可能です",
@@ -47,20 +49,51 @@ export function PostGeneration({ storeId, strategyData }: PostGenerationProps) {
             return
         }
 
-        // 3MB Limit Check (Base64 overhead keeps it under Vercel's 4.5MB limit)
-        if (file.size > 3 * 1024 * 1024) {
-            toast({
-                title: "ファイルサイズが大きすぎます (3MB以下)",
-                description: "サーバー制限のため、3MB以下の画像をご使用ください。",
-                variant: "destructive"
-            })
-            return
-        }
-
         setImageFile(file)
+
+        // 1. Client-side Resize & Compression logic
         const reader = new FileReader()
-        reader.onloadend = () => {
-            setImagePreview(reader.result as string)
+        reader.onload = (event) => {
+            const img = new window.Image()
+            img.onload = () => {
+                const canvas = document.createElement('canvas')
+                let width = img.width
+                let height = img.height
+
+                // Resize to max 1024px (sufficient for AI analysis)
+                const MAX_SIZE = 1024
+                if (width > height) {
+                    if (width > MAX_SIZE) {
+                        height *= MAX_SIZE / width
+                        width = MAX_SIZE
+                    }
+                } else {
+                    if (height > MAX_SIZE) {
+                        width *= MAX_SIZE / height
+                        height = MAX_SIZE
+                    }
+                }
+
+                canvas.width = width
+                canvas.height = height
+                const ctx = canvas.getContext('2d')
+                ctx?.drawImage(img, 0, 0, width, height)
+
+                // Compress to JPEG 0.7 quality to ensure small payload (<1MB)
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.7)
+
+                // Approximate size check
+                const sizeInBytes = 4 * Math.ceil((dataUrl.length / 3)) * 0.5624896334383812
+                console.log("Compressed Image Size:", sizeInBytes / 1024, "KB")
+
+                setImagePreview(dataUrl)
+
+                toast({
+                    title: "画像をアップロードしました",
+                    description: "AI解析用に最適化されました。",
+                })
+            }
+            img.src = event.target?.result as string
         }
         reader.readAsDataURL(file)
     }
