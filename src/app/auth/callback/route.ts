@@ -56,7 +56,26 @@ export async function GET(request: Request) {
                 })
             }
 
-            return NextResponse.redirect(`${origin}${next}`)
+            // Check Role for Redirect
+            const { data: { user } } = await supabase.auth.getUser()
+            let redirectUrl = next
+
+            if (user) {
+                // Determine Role
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', user.id)
+                    .single()
+
+                // If not Provider Admin, force redirect to Stores Hub
+                // (e.g. Client Admin, Store Admin, Viewer)
+                if (profile?.role !== 'PROVIDER_ADMIN') {
+                    redirectUrl = '/dashboard/stores'
+                }
+            }
+
+            return NextResponse.redirect(`${origin}${redirectUrl}`)
         } else {
             console.error('Auth Callback Error:', error)
         }

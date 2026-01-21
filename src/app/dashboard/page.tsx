@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -10,7 +11,7 @@ import { DatePickerWithRange } from "@/components/date-range-picker"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getStores } from "@/app/actions/store"
 import { getStoreMetrics } from "@/app/actions/store-metrics"
-import { updateStoreSecretsAction, getGoogleRefreshTokenFromCookie } from "@/app/actions/provider-actions"
+import { updateStoreSecretsAction, getGoogleRefreshTokenFromCookie, checkAdminStatusAction } from "@/app/actions/provider-actions"
 import { Store } from "@/types/store"
 import { addDays } from "date-fns"
 import { DateRange } from "react-day-picker"
@@ -45,6 +46,20 @@ export default function DashboardPage() {
     const [cvLabel, setCvLabel] = useState("")
     const [ga4CvEvent, setGa4CvEvent] = useState("")
     const [remarks, setRemarks] = useState("")
+
+    const router = useRouter()
+
+    // Redirect Non-Admins to Store Hub
+    useEffect(() => {
+        const checkRole = async () => {
+            const { isAdmin } = await checkAdminStatusAction()
+            if (!isAdmin) {
+                console.log("🔒 [Dashboard] User is not admin. Redirecting to Stores Hub.")
+                router.replace("/dashboard/stores")
+            }
+        }
+        checkRole()
+    }, [router])
 
     // Fetch Stores on Mount
     useEffect(() => {
