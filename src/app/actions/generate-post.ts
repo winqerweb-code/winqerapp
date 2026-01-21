@@ -12,6 +12,26 @@ interface GeneratePostParams {
     tone?: string
 }
 
+// Internal helper to get Service Role client for bypass
+import { createClient } from '@supabase/supabase-js'
+
+function getSupabaseAdmin() {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!url || !key) {
+        console.error("Missing Admin Credentials for Key Fetch:", { url: !!url, key: !!key })
+        return null
+    }
+
+    return createClient(url, key, {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false
+        }
+    })
+}
+
 export async function generateInstagramPost({
     storeId,
     apiKey,
@@ -39,10 +59,27 @@ export async function generateInstagramPost({
 
         // 2. Resolve API Key
         // Use client-provided key if available (legacy/global), otherwise fallback to Store Secret
-        // Note: Client might send empty string now.
-        const effectiveApiKey = (apiKey && apiKey.trim() !== "")
+        let effectiveApiKey = (apiKey && apiKey.trim() !== "")
             ? apiKey
             : (store.openai_api_key || "")
+
+        // SECURE FALLBACK: If standard fetch failed to get the key (due to RLS), fetch it via Admin Client
+        if (!effectiveApiKey) {
+            console.log("⚠️ OpenAI Key missing from standard store fetch. Attempting Admin Bypass...")
+            const adminSupabase = getSupabaseAdmin()
+            if (adminSupabase) {
+                const { data: adminStore } = await adminSupabase
+                    .from('stores')
+                    .select('openai_api_key')
+                    .eq('id', storeId)
+                    .single()
+
+                if (adminStore?.openai_api_key) {
+                    console.log("✅ Retrieved OpenAI Key via Admin Bypass")
+                    effectiveApiKey = adminStore.openai_api_key
+                }
+            }
+        }
 
         if (!effectiveApiKey) {
             throw new Error("OpenAI API Key is not configured. Please set it in the Store Settings.")
