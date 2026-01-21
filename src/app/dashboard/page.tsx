@@ -47,15 +47,21 @@ export default function DashboardPage() {
     const [ga4CvEvent, setGa4CvEvent] = useState("")
     const [remarks, setRemarks] = useState("")
 
+    // Gate rendering
+    const [allowRender, setAllowRender] = useState(false)
+
     const router = useRouter()
 
     // Redirect Non-Admins to Store Hub
     useEffect(() => {
         const checkRole = async () => {
+            // Optional: Add simple loading state if needed locally
             const { isAdmin } = await checkAdminStatusAction()
             if (!isAdmin) {
                 console.log("🔒 [Dashboard] User is not admin. Redirecting to Stores Hub.")
                 router.replace("/dashboard/stores")
+            } else {
+                setAllowRender(true)
             }
         }
         checkRole()
@@ -63,6 +69,7 @@ export default function DashboardPage() {
 
     // Fetch Stores on Mount
     useEffect(() => {
+        if (!allowRender) return
         const fetchStores = async () => {
             const result = await getStores()
             console.log('🏪 [Dashboard] fetchStores result:', result)
@@ -80,7 +87,7 @@ export default function DashboardPage() {
             }
         }
         fetchStores()
-    }, [])
+    }, [allowRender])
 
     // Sync Google Refresh Token (Auto-Save for Provider Admins)
     useEffect(() => {
@@ -244,6 +251,10 @@ export default function DashboardPage() {
     }
 
 
+
+    if (!allowRender) {
+        return <div className="p-8 flex justify-center text-muted-foreground">読み込み中...</div>
+    }
 
     return (
         <div className="space-y-6">

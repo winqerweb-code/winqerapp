@@ -44,7 +44,25 @@ export default function LoginPage() {
                 // Redirect is handled by middleware/auth state change usually, 
                 // but we can force reload or router push if needed.
                 // For now, let the onAuthStateChange in layout handle it or just wait.
-                window.location.href = "/dashboard"
+                await signInWithEmail(email, password)
+
+                // Intelligent Redirect based on Role
+                try {
+                    // Dynamic import to avoid build issues if server action is not client-friendly directly
+                    // But checkAdminStatusAction is a server action, safe to call
+                    const { checkAdminStatusAction } = await import("@/app/actions/provider-actions")
+                    const { isAdmin } = await checkAdminStatusAction()
+
+                    if (isAdmin) {
+                        window.location.href = "/dashboard"
+                    } else {
+                        window.location.href = "/dashboard/stores"
+                    }
+                } catch (e) {
+                    console.error("Redirect logic error", e)
+                    // Fallback
+                    window.location.href = "/dashboard/stores"
+                }
             }
         } catch (error: any) {
             console.error("Auth failed:", error)
