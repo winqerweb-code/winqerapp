@@ -1,5 +1,9 @@
 "use server"
 
+// Allow longer execution for AI generation (Vercel limit)
+// Note: This requires Vercel Pro for >10s on some plans, but on Hobby it might allow up to 60s for Server Actions
+export const maxDuration = 60;
+
 import OpenAI from "openai"
 import { getStore } from "@/app/actions/store"
 import { createClient } from '@supabase/supabase-js'
