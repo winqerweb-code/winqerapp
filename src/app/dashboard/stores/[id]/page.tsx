@@ -194,15 +194,19 @@ export default function StorePage() {
                         <Sparkles className="h-4 w-4" />
                         投稿生成
                     </TabsTrigger>
-                    <TabsTrigger value="strategy" className="flex items-center gap-2">
-                        <Target className="h-4 w-4" />
-                        戦略設定
-                    </TabsTrigger>
+                    {isAdmin && (
+                        <>
+                            <TabsTrigger value="strategy" className="flex items-center gap-2">
+                                <Target className="h-4 w-4" />
+                                戦略設定
+                            </TabsTrigger>
 
-                    <TabsTrigger value="settings" className="flex items-center gap-2">
-                        <Settings className="h-4 w-4" />
-                        店舗設定
-                    </TabsTrigger>
+                            <TabsTrigger value="settings" className="flex items-center gap-2">
+                                <Settings className="h-4 w-4" />
+                                店舗設定
+                            </TabsTrigger>
+                        </>
+                    )}
                 </TabsList>
 
                 {/* Tab 1: Post Generation */}

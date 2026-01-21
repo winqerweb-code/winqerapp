@@ -146,17 +146,6 @@ export default function LoginPage() {
                             </svg>
                             Googleでログイン
                         </Button>
-                        <Button
-                            variant="secondary"
-                            className="w-full bg-slate-200 hover:bg-slate-300 text-slate-800"
-                            onClick={() => {
-                                document.cookie = "demo_mode=true; path=/; max-age=86400" // 1 day
-                                window.location.href = "/dashboard/stores/demo-store/dashboard"
-                            }}
-                            type="button"
-                        >
-                            デモログイン（テスト用）
-                        </Button>
                     </div>
 
                     <div className="mt-4 text-center text-sm">
