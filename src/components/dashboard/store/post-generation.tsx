@@ -136,7 +136,7 @@ export function PostGeneration({ storeId, strategyData }: PostGenerationProps) {
             console.error(error)
             toast({
                 title: "生成失敗",
-                description: "もう一度お試しください。",
+                description: error.message || "もう一度お試しください。",
                 variant: "destructive"
             })
         } finally {
