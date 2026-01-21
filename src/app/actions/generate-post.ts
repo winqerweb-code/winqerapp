@@ -179,7 +179,11 @@ JSONフォーマット:
         return { success: true, captions }
 
     } catch (error: any) {
-        console.error("Generate Post Error:", error)
-        return { success: false, error: error.message }
+        console.error("Generate Post Critical Error:", error)
+        // Ensure we return a serializable object, not throwing
+        return {
+            success: false,
+            error: error?.message || "Unknown Server Error during generation"
+        }
     }
 }
