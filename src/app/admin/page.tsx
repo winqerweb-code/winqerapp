@@ -28,7 +28,8 @@ import {
     getProviderAdminsAction,
     assignProviderAdminAction,
     removeProviderAdminAction,
-    adminResetUserPasswordAction
+    adminResetUserPasswordAction,
+    getAllUsersAction
 } from "@/app/actions/provider-actions"
 import { getStoreGoogleDataAction } from "@/app/actions/google-data"
 import { getStores } from "@/app/actions/store"
@@ -48,6 +49,14 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
 
 interface UserAssignmentManagerProps {
     storeId: string;
@@ -158,6 +167,37 @@ function UserManagement() {
     const [targetEmail, setTargetEmail] = useState("")
     const [newPassword, setNewPassword] = useState("")
     const [isLoading, setIsLoading] = useState(false)
+    const [users, setUsers] = useState<any[]>([])
+    const [isLoadingUsers, setIsLoadingUsers] = useState(false)
+    const [searchTerm, setSearchTerm] = useState("")
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            setIsLoadingUsers(true)
+            try {
+                const res = await getAllUsersAction()
+                if (res.success) {
+                    setUsers(res.users || [])
+                } else {
+                    toast({
+                        title: "ユーザー取得エラー",
+                        description: res.error,
+                        variant: "destructive"
+                    })
+                }
+            } catch (error) {
+                console.error(error)
+            } finally {
+                setIsLoadingUsers(false)
+            }
+        }
+        fetchUsers()
+    }, [toast])
+
+    const filteredUsers = users.filter(user =>
+        (user.email?.toLowerCase().includes(searchTerm.toLowerCase()) || "") ||
+        (user.role?.toLowerCase().includes(searchTerm.toLowerCase()) || "")
+    )
 
     const handleResetPassword = async () => {
         if (!targetEmail || !newPassword) {
@@ -211,56 +251,116 @@ function UserManagement() {
     }
 
     return (
-        <Card className="mt-4">
-            <CardHeader>
-                <CardTitle>ユーザーパスワード管理</CardTitle>
-                <CardDescription>
-                    ユーザーのパスワードを強制的にリセットします。
-                    <br />
-                    <span className="text-red-500 font-bold">警告: ユーザーは古いパスワードでログインできなくなります。</span>
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-4 max-w-md">
-                    <div className="grid gap-2">
-                        <Label htmlFor="target-email">対象ユーザーのメールアドレス</Label>
+        <div className="space-y-6 mt-4">
+            <Card>
+                <CardHeader>
+                    <CardTitle>ユーザー一覧</CardTitle>
+                    <CardDescription>登録済みユーザーの一覧です。</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="mb-4">
                         <Input
-                            id="target-email"
-                            placeholder="user@example.com"
-                            value={targetEmail}
-                            onChange={(e) => setTargetEmail(e.target.value)}
+                            placeholder="メールアドレスで検索..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="new-password">新しいパスワード</Label>
-                        <div className="flex gap-2">
-                            <Input
-                                id="new-password"
-                                type="text" // Visible so admin can see what they are setting
-                                placeholder="新しいパスワード"
-                                value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                minLength={6}
-                            />
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                onClick={() => setNewPassword(Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8))}
-                                title="ランダム生成"
-                            >
-                                <RefreshCw className="h-4 w-4" />
-                            </Button>
+                    {isLoadingUsers ? (
+                        <div className="text-center py-4">読み込み中...</div>
+                    ) : (
+                        <div className="rounded-md border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>メールアドレス</TableHead>
+                                        <TableHead>権限</TableHead>
+                                        <TableHead>登録日</TableHead>
+                                        <TableHead className="text-right">操作</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredUsers.length > 0 ? (
+                                        filteredUsers.map((user) => (
+                                            <TableRow key={user.id}>
+                                                <TableCell className="font-medium">{user.email}</TableCell>
+                                                <TableCell>{user.role}</TableCell>
+                                                <TableCell>{user.created_at ? new Date(user.created_at).toLocaleDateString() : '-'}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setTargetEmail(user.email)}
+                                                    >
+                                                        選択
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="text-center h-24">
+                                                ユーザーが見つかりません
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
                         </div>
-                        <p className="text-xs text-muted-foreground">※少なくとも6文字以上。ランダム生成ボタンで強力なパスワードを生成できます。</p>
+                    )}
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>ユーザーパスワード管理</CardTitle>
+                    <CardDescription>
+                        ユーザーのパスワードを強制的にリセットします。
+                        <br />
+                        <span className="text-red-500 font-bold">警告: ユーザーは古いパスワードでログインできなくなります。</span>
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4 max-w-md">
+                        <div className="grid gap-2">
+                            <Label htmlFor="target-email">対象ユーザーのメールアドレス</Label>
+                            <Input
+                                id="target-email"
+                                placeholder="user@example.com"
+                                value={targetEmail}
+                                onChange={(e) => setTargetEmail(e.target.value)}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="new-password">新しいパスワード</Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    id="new-password"
+                                    type="text" // Visible so admin can see what they are setting
+                                    placeholder="新しいパスワード"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    minLength={6}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => setNewPassword(Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8))}
+                                    title="ランダム生成"
+                                >
+                                    <RefreshCw className="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground">※少なくとも6文字以上。ランダム生成ボタンで強力なパスワードを生成できます。</p>
+                        </div>
+                        <Button onClick={handleResetPassword} disabled={isLoading} className="w-full">
+                            <Key className="mr-2 h-4 w-4" />
+                            {isLoading ? "リセット中..." : "パスワードをリセット"}
+                        </Button>
                     </div>
-                    <Button onClick={handleResetPassword} disabled={isLoading} className="w-full">
-                        <Key className="mr-2 h-4 w-4" />
-                        {isLoading ? "リセット中..." : "パスワードをリセット"}
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
+                </CardContent>
+            </Card>
+        </div>
     )
 }
 

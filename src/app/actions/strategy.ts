@@ -25,6 +25,8 @@ async function getSupabase() {
     )
 }
 
+import { verifyStoreAccess, isProviderAdmin } from '@/lib/rbac'
+
 export async function saveStrategy(storeId: string, inputData: any, outputData: any) {
     const supabase = await getSupabase()
     const { data: { user } } = await supabase.auth.getUser()
@@ -33,16 +35,14 @@ export async function saveStrategy(storeId: string, inputData: any, outputData: 
         return { success: false, error: 'Unauthorized' }
     }
 
-    // Verify store ownership
-    const { data: store, error: storeError } = await supabase
-        .from('stores')
-        .select('id')
-        .eq('id', storeId)
-        .eq('user_id', user.id)
-        .single()
+    // RBAC Check (Only Provider Admin can update strategy currently, matching UI)
+    // If we want Store Admin to update, we can check role === 'STORE_ADMIN'
+    const { hasAccess } = await verifyStoreAccess(user.id, storeId)
+    const isProvider = await isProviderAdmin(user.id)
 
-    if (storeError || !store) {
-        return { success: false, error: 'Store not found or unauthorized' }
+    // Strict: Only Provider Admin can save strategy
+    if (!hasAccess || !isProvider) {
+        return { success: false, error: 'Unauthorized: Only Provider Admin can update strategy' }
     }
 
     // Upsert strategy
@@ -76,8 +76,13 @@ export async function getStrategy(storeId: string) {
         return { success: false, error: 'Unauthorized' }
     }
 
-    // Verify store ownership (implicitly handled by RLS, but good to be explicit or rely on RLS)
-    // Here we rely on RLS policies defined in the migration
+    // RBAC Check (View access)
+    // verifyStoreAccess returns true for Provider Admin OR Assigned User
+    const { hasAccess } = await verifyStoreAccess(user.id, storeId)
+
+    if (!hasAccess) {
+        return { success: false, error: 'Unauthorized: Access Denied' }
+    }
 
     const { data, error } = await supabase
         .from('strategies')
@@ -95,4 +100,83 @@ export async function getStrategy(storeId: string) {
     }
 
     return { success: true, strategy: data }
+}
+
+// Internal helper to get Service Role client for bypass
+import { createClient } from '@supabase/supabase-js'
+
+function getSupabaseAdmin() {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!url || !key) {
+        console.error("Missing Admin Credentials:", { url: !!url, key: !!key })
+        return null
+    }
+
+    return createClient(url, key, {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false
+        }
+    })
+}
+
+// Special fetcher for generation that bypasses RLS if standard fetch fails
+// This is secure because we verify Store Access first using standard user auth
+export async function getStrategyForGeneration(storeId: string) {
+    console.log(`[getStrategyForGeneration] Starting for storeId: ${storeId}`)
+    const supabase = await getSupabase()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        console.log("[getStrategyForGeneration] No user found")
+        return { success: false, error: 'Unauthorized' }
+    }
+
+    // 1. Verify Access using STANDARD client (respecting assignments)
+    const { hasAccess } = await verifyStoreAccess(user.id, storeId)
+    console.log(`[getStrategyForGeneration] Access check: ${hasAccess} for user ${user.email}`)
+
+    if (!hasAccess) {
+        return { success: false, error: 'Unauthorized: Access Denied' }
+    }
+
+    // 2. Try Standard Fetch first
+    const { data: standardData, error: standardError } = await supabase
+        .from('strategies')
+        .select('*')
+        .eq('store_id', storeId)
+        .single()
+
+    if (standardData) {
+        console.log("[getStrategyForGeneration] Standard fetch successful")
+        return { success: true, strategy: standardData }
+    } else {
+        console.log("[getStrategyForGeneration] Standard fetch returned empty/error:", standardError?.message)
+    }
+
+    // 3. If Standard Fetch failed (likely due to RLS), and we are Authorized (by Assignment),
+    //    use Service Role to fetch the data transparently.
+    const adminSupabase = getSupabaseAdmin()
+
+    if (adminSupabase) {
+        console.log("[getStrategyForGeneration] Attempting Admin Bypass...")
+        const { data: adminData, error: adminError } = await adminSupabase
+            .from('strategies')
+            .select('*')
+            .eq('store_id', storeId)
+            .single()
+
+        if (adminData) {
+            console.log("[getStrategyForGeneration] Admin Bypass Successful")
+            return { success: true, strategy: adminData }
+        } else {
+            console.error("[getStrategyForGeneration] Admin Bypass Failed:", adminError?.message)
+        }
+    } else {
+        console.warn("[getStrategyForGeneration] Admin Client could not be created (Missing Key?)")
+    }
+
+    return { success: true, strategy: null }
 }

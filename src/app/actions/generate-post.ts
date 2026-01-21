@@ -1,7 +1,7 @@
 "use server"
 
 import OpenAI from "openai"
-import { getStrategy } from "@/app/actions/strategy"
+import { getStrategy, getStrategyForGeneration } from "@/app/actions/strategy"
 import { getStore } from "@/app/actions/store"
 
 interface GeneratePostParams {
@@ -23,7 +23,7 @@ export async function generateInstagramPost({
         // 1. Fetch Store & Strategy Data
         const [storeResult, strategyResult] = await Promise.all([
             getStore(storeId),
-            getStrategy(storeId)
+            getStrategyForGeneration(storeId)
         ])
 
         if (!storeResult.success || !storeResult.store) {

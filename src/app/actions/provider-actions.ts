@@ -526,3 +526,24 @@ export async function adminResetUserPasswordAction(targetEmail: string, newPassw
         return { success: false, error: error.message || "予期せぬエラーが発生しました" }
     }
 }
+
+export async function getAllUsersAction() {
+    const supabase = await getSupabase()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user || !(await isProviderAdmin(user.id))) {
+        return { success: false, error: "権限がありません: プロバイダー権限が必要です" }
+    }
+
+    // Fetch profiles sorted by created_at desc
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+    if (error) {
+        return { success: false, error: error.message }
+    }
+
+    return { success: true, users: data }
+}

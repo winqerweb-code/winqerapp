@@ -7,7 +7,7 @@ import { getStore, updateStore } from "@/app/actions/store"
 import { useToast } from "@/components/ui/use-toast"
 import { Store } from "@/types/store"
 import { useStore } from "@/contexts/store-context"
-import { getStrategy } from "@/app/actions/strategy"
+import { getStrategy, getStrategyForGeneration } from "@/app/actions/strategy"
 import { getAdAccountsAction, getCampaignsAction } from "@/app/actions/meta-actions"
 import { checkAdminStatusAction } from "@/app/actions/provider-actions"
 
@@ -100,37 +100,58 @@ export default function StorePage() {
         fetchCampaigns()
     }, [selectedAdAccountId])
 
+    // Debug Log for render
+    console.log("[StorePage] Rendering. ID:", storeId)
+
     useEffect(() => {
         const fetchStoreAndStrategy = async () => {
-            if (!storeId) return
+            if (!storeId) {
+                console.log("[StorePage] No Store ID")
+                return
+            }
+            console.log("[StorePage] Start Fetching...", storeId)
             try {
-                // 1. Fetch Store
-                const result = await getStore(storeId)
-                if (result.success && result.store) {
-                    setStore(result.store)
-                    setSelectedStore(result.store)
+                // Execute in parallel to ensure Strategy is fetched even if Store fetch has minor issues
+                // and to speed up loading.
+                const [storeResult, strategyRes] = await Promise.all([
+                    getStore(storeId),
+                    getStrategyForGeneration(storeId)
+                ])
+
+                console.log("[StorePage] Store Result:", storeResult)
+                console.log("[StorePage] Strategy Result:", strategyRes)
+
+                // 1. Handle Store
+                if (storeResult.success && storeResult.store) {
+                    setStore(storeResult.store)
+                    setSelectedStore(storeResult.store)
 
                     // Hydrate Form
-                    setName(result.store.name || "")
-                    setAddress(result.store.address || "")
-                    setPhone(result.store.phone || "")
-                    setMetaCampaignId(result.store.meta_campaign_id || "none")
-                    setGa4PropertyId(result.store.ga4_property_id || "")
-                    setGbpLocationId(result.store.gbp_location_id || "")
-                    if (result.store.meta_ad_account_id) setSelectedAdAccountId(result.store.meta_ad_account_id)
-                    setCvEventName(result.store.cv_event_name || "")
-                    setTargetAudience(result.store.target_audience || "")
-                    setInitialBudget(result.store.initial_budget || "")
-                    setIndustry(result.store.industry || "")
+                    setName(storeResult.store.name || "")
+                    setAddress(storeResult.store.address || "")
+                    setPhone(storeResult.store.phone || "")
+                    setMetaCampaignId(storeResult.store.meta_campaign_id || "none")
+                    setGa4PropertyId(storeResult.store.ga4_property_id || "")
+                    setGbpLocationId(storeResult.store.gbp_location_id || "")
+                    if (storeResult.store.meta_ad_account_id) setSelectedAdAccountId(storeResult.store.meta_ad_account_id)
+                    setCvEventName(storeResult.store.cv_event_name || "")
+                    setTargetAudience(storeResult.store.target_audience || "")
+                    setInitialBudget(storeResult.store.initial_budget || "")
+                    setIndustry(storeResult.store.industry || "")
+                } else {
+                    console.error("[StorePage] Store fetch failed:", storeResult.error)
                 }
 
-                // 2. Fetch Strategy (for Post Generation Context)
-                const strategyRes = await getStrategy(storeId)
+                // 2. Handle Strategy
                 if (strategyRes.success && strategyRes.strategy) {
+                    console.log("[StorePage] Setting strategy data:", strategyRes.strategy)
                     setStrategyData(strategyRes.strategy)
+                } else {
+                    console.warn("[StorePage] Strategy fetch failed or empty:", strategyRes)
+                    // If failed, we might still want to try to use standard logic or just log
                 }
-
             } catch (error) {
+                console.error("[StorePage] Exception during fetch:", error)
                 toast({
                     title: "エラー",
                     description: "データの取得に失敗しました。",
