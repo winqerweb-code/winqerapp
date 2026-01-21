@@ -47,10 +47,11 @@ export function PostGeneration({ storeId, strategyData }: PostGenerationProps) {
             return
         }
 
-        // 5MB Limit Check (approx)
-        if (file.size > 5 * 1024 * 1024) {
+        // 3MB Limit Check (Base64 overhead keeps it under Vercel's 4.5MB limit)
+        if (file.size > 3 * 1024 * 1024) {
             toast({
-                title: "ファイルサイズが大きすぎます (5MB以下)",
+                title: "ファイルサイズが大きすぎます (3MB以下)",
+                description: "サーバー制限のため、3MB以下の画像をご使用ください。",
                 variant: "destructive"
             })
             return
