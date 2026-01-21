@@ -1,18 +1,12 @@
-import OpenAI from "openai"
-import { getStore } from "@/app/actions/store"
 import { createClient } from '@supabase/supabase-js'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import OpenAI from "openai"
+import { NextRequest, NextResponse } from 'next/server'
+import { getStore } from "@/app/actions/store"
 
-interface GeneratePostParams {
-    storeId: string
-    apiKey: string
-    topic: string
-    imageBase64?: string
-    tone?: string
-}
-
-
+// Allow execution up to 60 seconds (Standard for Vercel Hobby/Pro Serverless Functions)
+export const maxDuration = 60;
 
 function getSupabaseAdmin() {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -31,29 +25,27 @@ function getSupabaseAdmin() {
     })
 }
 
-export async function generateInstagramPost({
-    storeId,
-    apiKey,
-    topic,
-    imageBase64,
-    tone
-}: GeneratePostParams) {
+export async function POST(req: NextRequest) {
     try {
-        // 1. Fetch Store & Strategy Data
+        const body = await req.json()
+        const { storeId, apiKey, topic, imageBase64, tone } = body
+
+        if (!storeId) {
+            return NextResponse.json({ success: false, error: "Store ID is required" }, { status: 400 })
+        }
+
         // 1. Fetch Store 
         const storeResult = await getStore(storeId)
 
         if (!storeResult.success || !storeResult.store) {
-            throw new Error("Store not found")
+            return NextResponse.json({ success: false, error: "Store not found" }, { status: 404 })
         }
 
         const store = storeResult.store
 
         // 2. Fetch Strategy (Inlined for robustness)
-        // We use a local helper to avoid module dependency issues
         let strategyData: any = null
         try {
-            // Helper to get Supabase (Standard)
             const cookieStore = cookies()
             const supabase = createServerClient(
                 process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -61,12 +53,10 @@ export async function generateInstagramPost({
                 {
                     cookies: {
                         get(name: string) { return cookieStore.get(name)?.value },
-                        // No need to set cookies for simple fetch
                     }
                 }
             )
 
-            // Standard fetch
             const { data: stdData } = await supabase
                 .from('strategies')
                 .select('*')
@@ -76,7 +66,6 @@ export async function generateInstagramPost({
             if (stdData) {
                 strategyData = stdData
             } else {
-                // Admin Bypass if standard failed (RLS)
                 const adminClient = getSupabaseAdmin()
                 if (adminClient) {
                     const { data: adminData } = await adminClient
@@ -89,22 +78,18 @@ export async function generateInstagramPost({
             }
         } catch (stratError) {
             console.error("Strategy Fetch Error (Non-fatal):", stratError)
-            // Continue without strategy if failed
         }
 
         // Prepare Strategy Context
         const inputData = strategyData?.input_data || {}
-        const outputData = strategyData?.output_data || {} // The AI generated persona etc
+        const outputData = strategyData?.output_data || {}
 
-        // 2. Resolve API Key
-        // Use client-provided key if available (legacy/global), otherwise fallback to Store Secret
+        // 3. Resolve API Key
         let effectiveApiKey = (apiKey && apiKey.trim() !== "")
             ? apiKey
             : (store.openai_api_key || "")
 
-        // SECURE FALLBACK: If standard fetch failed to get the key (due to RLS), fetch it via Admin Client
         if (!effectiveApiKey) {
-            console.log("⚠️ OpenAI Key missing from standard store fetch. Attempting Admin Bypass...")
             const adminSupabase = getSupabaseAdmin()
             if (adminSupabase) {
                 const { data: adminStore } = await adminSupabase
@@ -114,22 +99,19 @@ export async function generateInstagramPost({
                     .single()
 
                 if (adminStore?.openai_api_key) {
-                    console.log("✅ Retrieved OpenAI Key via Admin Bypass")
                     effectiveApiKey = adminStore.openai_api_key
                 }
             }
         }
 
         if (!effectiveApiKey) {
-            throw new Error("OpenAI API Key is not configured. Please set it in the Store Settings.")
+            return NextResponse.json({ success: false, error: "OpenAI API Key is not configured." }, { status: 500 })
         }
 
-        // 3. Initialize OpenAI
-        const openai = new OpenAI({
-            apiKey: effectiveApiKey,
-        })
+        // 4. Initialize OpenAI
+        const openai = new OpenAI({ apiKey: effectiveApiKey })
 
-        // 3. Construct Prompt
+        // 5. Construct Prompt (Professional Copywriter Persona)
         const systemPrompt = `
 あなたは「売上に直結する言葉を紡ぐプロのInstagramコピーライター」です。
 提供された情報（店舗データ・戦略）を元に、ターゲットの心を動かし、予約や来店という「行動」を引き出すキャプションを作成してください。
@@ -184,7 +166,7 @@ JSONのキーは必ず "captions" という配列を含めてください。
             userContent.push({
                 type: "image_url",
                 image_url: {
-                    url: imageBase64, // base64 string including data:image/... prefix
+                    url: imageBase64,
                     detail: "high"
                 }
             })
@@ -194,7 +176,6 @@ JSONのキーは必ず "captions" という配列を含めてください。
             })
         }
 
-        // 4. Generate Content
         const response = await openai.chat.completions.create({
             model: "gpt-4o",
             messages: [
@@ -207,7 +188,6 @@ JSONのキーは必ず "captions" という配列を含めてください。
         const content = response.choices[0].message.content
         if (!content) throw new Error("No content generated")
 
-        // 5. Parse JSON
         let captions = []
         try {
             const parsed = JSON.parse(content)
@@ -224,18 +204,13 @@ JSONのキーは必ず "captions" という配列を含めてください。
             throw new Error("Failed to parse AI response")
         }
 
-        if (!captions || captions.length === 0) {
-            throw new Error("Failed to parse captions structure")
-        }
-
-        return { success: true, captions }
+        return NextResponse.json({ success: true, captions })
 
     } catch (error: any) {
-        console.error("Generate Post Critical Error:", error)
-        // Ensure we return a serializable object, not throwing
-        return {
+        console.error("API Route Critical Error:", error)
+        return NextResponse.json({
             success: false,
             error: error?.message || "Unknown Server Error during generation"
-        }
+        }, { status: 500 })
     }
 }

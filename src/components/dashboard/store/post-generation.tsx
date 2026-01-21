@@ -148,28 +148,35 @@ export function PostGeneration({ storeId, strategyData }: PostGenerationProps) {
         setResults(null)
 
         try {
-            const res = await generateInstagramPost({
-                storeId,
-                apiKey,
-                topic: topic || (imageFile ? "この画像について魅力的に紹介する投稿" : ""),
-                imageBase64: imagePreview || undefined, // Send base64 directly
-                tone
+            // Use API Route instead of Server Action to support longer timeouts (maxDuration)
+            const response = await fetch('/api/generate-post', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    storeId,
+                    apiKey,
+                    topic: topic || (imageFile ? "この画像について魅力的に紹介する投稿" : ""),
+                    imageBase64: imagePreview || undefined,
+                    tone
+                })
             })
 
-            if (res.success && res.captions) {
+            const res = await response.json()
+
+            if (response.ok && res.success && res.captions) {
                 setResults(res.captions)
                 toast({
                     title: "生成完了",
                     description: "3つの投稿案が生成されました。"
                 })
             } else {
-                throw new Error(res.error)
+                throw new Error(res.error || "Generation failed")
             }
         } catch (error: any) {
             console.error(error)
             toast({
                 title: "生成失敗",
-                description: error.message || "もう一度お試しください。",
+                description: error.data?.error || error.message || "もう一度お試しください。",
                 variant: "destructive"
             })
         } finally {
