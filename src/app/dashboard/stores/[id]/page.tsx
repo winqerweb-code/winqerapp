@@ -186,7 +186,7 @@ export default function StorePage() {
 
     return (
         <div className="flex-1 space-y-4 p-6 pt-6 bg-background min-h-screen">
-            <StoreHeader name={name} storeId={storeId} />
+            <StoreHeader name={name} storeId={storeId} isAdmin={isAdmin} />
 
             <Tabs defaultValue="post-gen" className="space-y-4">
                 <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 lg:w-[400px] h-auto">
