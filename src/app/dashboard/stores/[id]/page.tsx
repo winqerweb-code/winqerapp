@@ -9,6 +9,7 @@ import { Store } from "@/types/store"
 import { useStore } from "@/contexts/store-context"
 import { getStrategy } from "@/app/actions/strategy"
 import { getAdAccountsAction, getCampaignsAction } from "@/app/actions/meta-actions"
+import { checkAdminStatusAction } from "@/app/actions/provider-actions"
 
 // Components
 import { StoreHeader } from "@/components/dashboard/store/store-header"
@@ -31,6 +32,7 @@ export default function StorePage() {
     const [store, setStore] = useState<Store | null>(null)
     const [strategyData, setStrategyData] = useState<any>(null)
     const [loading, setLoading] = useState(false)
+    const [isAdmin, setIsAdmin] = useState(false)
 
     // Form State (for Settings Tab)
     const [name, setName] = useState("")
@@ -55,6 +57,12 @@ export default function StorePage() {
 
     // Fetch Meta Assets logic (Secure Server Action)
     useEffect(() => {
+        const checkAdmin = async () => {
+            const res = await checkAdminStatusAction()
+            setIsAdmin(res.isAdmin)
+        }
+        checkAdmin()
+
         const fetchMetaAssets = async () => {
             try {
                 const result = await getAdAccountsAction()
@@ -205,56 +213,60 @@ export default function StorePage() {
                 </TabsContent>
 
                 {/* Tab 2: Strategy */}
-                <TabsContent value="strategy" className="space-y-4">
-                    <div className="border rounded-lg bg-card p-4 shadow-sm">
-                        <StrategyView />
-                    </div>
-                </TabsContent>
+                {isAdmin && (
+                    <TabsContent value="strategy" className="space-y-4">
+                        <div className="border rounded-lg bg-card p-4 shadow-sm">
+                            <StrategyView />
+                        </div>
+                    </TabsContent>
+                )}
 
                 {/* Tab 3: Settings (Original Layout) */}
-                <TabsContent value="settings" className="space-y-4">
-                    <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
-                        {/* Left Column: Settings */}
-                        <div className="col-span-1 lg:col-span-4 space-y-4">
-                            {store && (
-                                <StoreSettings
-                                    store={store}
-                                    name={name}
-                                    setName={setName}
-                                    address={address}
-                                    setAddress={setAddress}
-                                    phone={phone}
-                                    setPhone={setPhone}
-                                    targetAudience={targetAudience}
-                                    setTargetAudience={setTargetAudience}
-                                    initialBudget={initialBudget}
-                                    setInitialBudget={setInitialBudget}
-                                    industry={industry}
-                                    setIndustry={setIndustry}
+                {isAdmin && (
+                    <TabsContent value="settings" className="space-y-4">
+                        <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
+                            {/* Left Column: Settings */}
+                            <div className="col-span-1 lg:col-span-4 space-y-4">
+                                {store && (
+                                    <StoreSettings
+                                        store={store}
+                                        name={name}
+                                        setName={setName}
+                                        address={address}
+                                        setAddress={setAddress}
+                                        phone={phone}
+                                        setPhone={setPhone}
+                                        targetAudience={targetAudience}
+                                        setTargetAudience={setTargetAudience}
+                                        initialBudget={initialBudget}
+                                        setInitialBudget={setInitialBudget}
+                                        industry={industry}
+                                        setIndustry={setIndustry}
+                                        onSave={handleSave}
+                                        loading={loading}
+                                    />
+                                )}
+                            </div>
+
+                            {/* Right Column: Integrations */}
+                            <div className="col-span-1 lg:col-span-3 space-y-4">
+                                <Integrations
+                                    metaCampaignId={metaCampaignId}
+                                    setMetaCampaignId={setMetaCampaignId}
+                                    campaigns={campaigns}
+                                    ga4PropertyId={ga4PropertyId}
+                                    setGa4PropertyId={setGa4PropertyId}
+                                    gbpLocationId={gbpLocationId}
+                                    setGbpLocationId={setGbpLocationId}
+                                    cvEventName={cvEventName}
+                                    setCvEventName={setCvEventName}
                                     onSave={handleSave}
                                     loading={loading}
                                 />
-                            )}
+                            </div>
                         </div>
-
-                        {/* Right Column: Integrations */}
-                        <div className="col-span-1 lg:col-span-3 space-y-4">
-                            <Integrations
-                                metaCampaignId={metaCampaignId}
-                                setMetaCampaignId={setMetaCampaignId}
-                                campaigns={campaigns}
-                                ga4PropertyId={ga4PropertyId}
-                                setGa4PropertyId={setGa4PropertyId}
-                                gbpLocationId={gbpLocationId}
-                                setGbpLocationId={setGbpLocationId}
-                                cvEventName={cvEventName}
-                                setCvEventName={setCvEventName}
-                                onSave={handleSave}
-                                loading={loading}
-                            />
-                        </div>
-                    </div>
-                </TabsContent>
+                    </TabsContent>
+                )}
             </Tabs>
         </div>
     )

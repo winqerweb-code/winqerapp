@@ -27,14 +27,15 @@ import {
     getGoogleRefreshTokenFromCookie,
     getProviderAdminsAction,
     assignProviderAdminAction,
-    removeProviderAdminAction
+    removeProviderAdminAction,
+    adminResetUserPasswordAction
 } from "@/app/actions/provider-actions"
 import { getStoreGoogleDataAction } from "@/app/actions/google-data"
 import { getStores } from "@/app/actions/store"
 import { Store } from "@/types/store"
 import { SecureApiKeyInput } from "@/components/secure-api-key-input"
 import { IdInputWithSelect } from "@/components/id-input-with-select"
-import { Trash2, RefreshCw, Save, Plus, UserPlus } from "lucide-react"
+import { Trash2, RefreshCw, Save, Plus, UserPlus, Key } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { GoogleConnectButton } from "@/components/google-connect-button"
 import { supabase } from "@/lib/auth"
@@ -150,6 +151,117 @@ function UserAssignmentManager({ storeId, storeName }: UserAssignmentManagerProp
             </CardContent>
         </Card>
     );
+}
+
+function UserManagement() {
+    const { toast } = useToast()
+    const [targetEmail, setTargetEmail] = useState("")
+    const [newPassword, setNewPassword] = useState("")
+    const [isLoading, setIsLoading] = useState(false)
+
+    const handleResetPassword = async () => {
+        if (!targetEmail || !newPassword) {
+            toast({
+                title: "入力エラー",
+                description: "メールアドレスと新しいパスワードを入力してください",
+                variant: "destructive"
+            })
+            return
+        }
+
+        if (newPassword.length < 6) {
+            toast({
+                title: "パスワードエラー",
+                description: "パスワードは6文字以上で入力してください",
+                variant: "destructive"
+            })
+            return
+        }
+
+        if (!confirm(`本当にユーザー ${targetEmail} のパスワードをリセットしますか？\nこの操作は取り消せません。`)) {
+            return
+        }
+
+        setIsLoading(true)
+        try {
+            const res = await adminResetUserPasswordAction(targetEmail, newPassword)
+            if (res.success) {
+                toast({
+                    title: "リセット完了",
+                    description: "パスワードが正常に変更されました。",
+                })
+                setNewPassword("")
+                // Don't clear email so admin can verify who they just changed
+            } else {
+                toast({
+                    title: "エラー",
+                    description: res.error,
+                    variant: "destructive"
+                })
+            }
+        } catch (error) {
+            toast({
+                title: "エラー",
+                description: "予期せぬエラーが発生しました",
+                variant: "destructive"
+            })
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    return (
+        <Card className="mt-4">
+            <CardHeader>
+                <CardTitle>ユーザーパスワード管理</CardTitle>
+                <CardDescription>
+                    ユーザーのパスワードを強制的にリセットします。
+                    <br />
+                    <span className="text-red-500 font-bold">警告: ユーザーは古いパスワードでログインできなくなります。</span>
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-4 max-w-md">
+                    <div className="grid gap-2">
+                        <Label htmlFor="target-email">対象ユーザーのメールアドレス</Label>
+                        <Input
+                            id="target-email"
+                            placeholder="user@example.com"
+                            value={targetEmail}
+                            onChange={(e) => setTargetEmail(e.target.value)}
+                        />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="new-password">新しいパスワード</Label>
+                        <div className="flex gap-2">
+                            <Input
+                                id="new-password"
+                                type="text" // Visible so admin can see what they are setting
+                                placeholder="新しいパスワード"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                minLength={6}
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                onClick={() => setNewPassword(Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8))}
+                                title="ランダム生成"
+                            >
+                                <RefreshCw className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">※少なくとも6文字以上。ランダム生成ボタンで強力なパスワードを生成できます。</p>
+                    </div>
+                    <Button onClick={handleResetPassword} disabled={isLoading} className="w-full">
+                        <Key className="mr-2 h-4 w-4" />
+                        {isLoading ? "リセット中..." : "パスワードをリセット"}
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    )
 }
 
 function ProviderAdminsManager() {
@@ -635,6 +747,7 @@ export default function AdminDashboard() {
                     <Tabs defaultValue="store-management">
                         <TabsList>
                             <TabsTrigger value="store-management">店舗管理</TabsTrigger>
+                            <TabsTrigger value="user-management">ユーザー管理</TabsTrigger>
                             <TabsTrigger value="system-admins">システム管理者</TabsTrigger>
                         </TabsList>
                         <TabsContent value="store-management">
@@ -897,6 +1010,9 @@ export default function AdminDashboard() {
                                 </div>
                             </div>
 
+                        </TabsContent>
+                        <TabsContent value="user-management" className="pt-4">
+                            <UserManagement />
                         </TabsContent>
                         <TabsContent value="system-admins" className="pt-4">
                             <ProviderAdminsManager />

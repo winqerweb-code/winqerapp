@@ -68,24 +68,31 @@ function SidebarContent({ isAdmin, onLinkClick }: { isAdmin?: boolean, onLinkCli
             </div>
             <div className="flex-1 overflow-y-auto py-4">
                 <nav className="grid gap-1 px-2">
-                    {sidebarItems.map((item, index) => {
-                        const Icon = item.icon
-                        const isActive = pathname === item.href
-                        return (
-                            <Link
-                                key={index}
-                                href={item.href}
-                                onClick={onLinkClick}
-                                className={cn(
-                                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
-                                    isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                                )}
-                            >
-                                <Icon className="h-4 w-4" />
-                                {item.title}
-                            </Link>
-                        )
-                    })}
+                    {sidebarItems
+                        .filter(item => {
+                            // If user is admin, show everything
+                            if (isAdmin) return true
+                            // If user is NOT admin, only show Stores ("店舗ハブ")
+                            return item.href === "/dashboard/stores"
+                        })
+                        .map((item, index) => {
+                            const Icon = item.icon
+                            const isActive = pathname === item.href
+                            return (
+                                <Link
+                                    key={index}
+                                    href={item.href}
+                                    onClick={onLinkClick}
+                                    className={cn(
+                                        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
+                                        isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground"
+                                    )}
+                                >
+                                    <Icon className="h-4 w-4" />
+                                    {item.title}
+                                </Link>
+                            )
+                        })}
                     {isAdmin && (
                         <Link
                             href="/admin"

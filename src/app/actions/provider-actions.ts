@@ -462,3 +462,67 @@ export async function removeProviderAdminAction(targetUserId: string) {
 
     return { success: true }
 }
+
+export async function adminResetUserPasswordAction(targetEmail: string, newPassword: string) {
+    const supabase = await getSupabase()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user || !(await isProviderAdmin(user.id))) {
+        return { success: false, error: "権限がありません: プロバイダー権限が必要です" }
+    }
+
+    /*
+     * Password Strength Validation (Basic)
+     * You might want to enforce stronger rules here
+     */
+    if (!newPassword || newPassword.length < 6) {
+        return { success: false, error: "パスワードは6文字以上である必要があります" }
+    }
+
+    try {
+        const adminSupabase = getServiceSupabase()
+
+        // 1. Find user by email
+        const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', targetEmail)
+            .maybeSingle()
+
+        if (profileError) {
+            return { success: false, error: `ユーザー検索エラー: ${profileError.message}` }
+        }
+
+        if (!profile) {
+            return { success: false, error: "ユーザーが見つかりません" }
+        }
+
+        // 2. Update Password
+        const { error: updateError } = await adminSupabase.auth.admin.updateUserById(
+            profile.id,
+            { password: newPassword }
+        )
+
+        if (updateError) {
+            return { success: false, error: `パスワードリセット失敗: ${updateError.message}` }
+        }
+
+        // 3. Audit Log
+        try {
+            await supabase.from('audit_logs').insert({
+                actor_id: user.id,
+                target_user_id: profile.id,
+                action: 'FORCE_PASSWORD_RESET',
+                details: { target_email: targetEmail }
+            })
+        } catch (auditError) {
+            console.error("Audit Log Error:", auditError)
+        }
+
+        return { success: true }
+
+    } catch (error: any) {
+        console.error("AdminResetPassword Error:", error)
+        return { success: false, error: error.message || "予期せぬエラーが発生しました" }
+    }
+}
