@@ -1,8 +1,5 @@
 "use server"
 
-// Allow longer execution for AI generation (Vercel limit)
-export const maxDuration = 60;
-
 import OpenAI from "openai"
 import { getStore } from "@/app/actions/store"
 import { createClient } from '@supabase/supabase-js'
