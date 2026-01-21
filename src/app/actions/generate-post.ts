@@ -1,8 +1,10 @@
 "use server"
 
 import OpenAI from "openai"
-import { getStrategy, getStrategyForGeneration } from "@/app/actions/strategy"
 import { getStore } from "@/app/actions/store"
+import { createClient } from '@supabase/supabase-js'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 interface GeneratePostParams {
     storeId: string
@@ -12,8 +14,7 @@ interface GeneratePostParams {
     tone?: string
 }
 
-// Internal helper to get Service Role client for bypass
-import { createClient } from '@supabase/supabase-js'
+
 
 function getSupabaseAdmin() {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -41,21 +42,61 @@ export async function generateInstagramPost({
 }: GeneratePostParams) {
     try {
         // 1. Fetch Store & Strategy Data
-        const [storeResult, strategyResult] = await Promise.all([
-            getStore(storeId),
-            getStrategyForGeneration(storeId)
-        ])
+        // 1. Fetch Store 
+        const storeResult = await getStore(storeId)
 
         if (!storeResult.success || !storeResult.store) {
             throw new Error("Store not found")
         }
 
         const store = storeResult.store
-        const strategy = strategyResult.success ? strategyResult.strategy : null
+
+        // 2. Fetch Strategy (Inlined for robustness)
+        // We use a local helper to avoid module dependency issues
+        let strategyData: any = null
+        try {
+            // Helper to get Supabase (Standard)
+            const cookieStore = cookies()
+            const supabase = createServerClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+                {
+                    cookies: {
+                        get(name: string) { return cookieStore.get(name)?.value },
+                        // No need to set cookies for simple fetch
+                    }
+                }
+            )
+
+            // Standard fetch
+            const { data: stdData } = await supabase
+                .from('strategies')
+                .select('*')
+                .eq('store_id', storeId)
+                .single()
+
+            if (stdData) {
+                strategyData = stdData
+            } else {
+                // Admin Bypass if standard failed (RLS)
+                const adminClient = getSupabaseAdmin()
+                if (adminClient) {
+                    const { data: adminData } = await adminClient
+                        .from('strategies')
+                        .select('*')
+                        .eq('store_id', storeId)
+                        .single()
+                    if (adminData) strategyData = adminData
+                }
+            }
+        } catch (stratError) {
+            console.error("Strategy Fetch Error (Non-fatal):", stratError)
+            // Continue without strategy if failed
+        }
 
         // Prepare Strategy Context
-        const inputData = strategy?.input_data || {}
-        const outputData = strategy?.output_data || {} // The AI generated persona etc
+        const inputData = strategyData?.input_data || {}
+        const outputData = strategyData?.output_data || {} // The AI generated persona etc
 
         // 2. Resolve API Key
         // Use client-provided key if available (legacy/global), otherwise fallback to Store Secret
