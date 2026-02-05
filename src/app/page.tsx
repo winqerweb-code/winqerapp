@@ -5,7 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart3, Store, PenTool, CheckCircle2 } from "lucide-react"
+import { Brain, Search, Instagram, CheckCircle2 } from "lucide-react"
 
 export default async function Home() {
   const cookieStore = cookies()
@@ -48,7 +48,7 @@ export default async function Home() {
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
             <Link href="#features" className="hover:text-slate-900">機能</Link>
-            <Link href="#google" className="hover:text-slate-900">Google連携</Link>
+            <Link href="#google" className="hover:text-slate-900">データ活用</Link>
           </nav>
           <div className="flex items-center gap-4">
             <Link href="/login">
@@ -63,17 +63,17 @@ export default async function Home() {
         <section className="py-20 md:py-32 bg-gradient-to-b from-white to-slate-50">
           <div className="container mx-auto px-4 text-center">
             <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-slate-900 mb-6">
-              店舗経営を科学する。<br className="hidden md:block" />
-              集客と売上を最大化。
+              店舗の「強み」を最大化。<br className="hidden md:block" />
+              SWOT分析から、最適な投稿を自動生成。
             </h1>
             <p className="text-lg md:text-xl text-slate-600 mb-10 max-w-2xl mx-auto">
-              WINQER（ウィンカー）は、Googleビジネスプロフィールと連携し、
-              店舗のパフォーマンスを可視化・分析・改善する統合プラットフォームです。
+              WINQER（ウィンカー）は、GoogleビジネスプロフィールのデータをAIが分析。
+              店舗ごとの強み（Strengths）を活かしたInstagram投稿を自動で作成します。
             </p>
             <div className="flex justify-center gap-4">
               <Link href="/login">
-                <Button size="lg" className="h-12 px-8 text-base">
-                  無料で始める
+                <Button size="lg" className="h-12 px-8 text-base bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 border-none">
+                  無料で分析を始める
                 </Button>
               </Link>
             </div>
@@ -83,41 +83,41 @@ export default async function Home() {
         {/* Features Section */}
         <section id="features" className="py-20 bg-white">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-center text-slate-900 mb-12">主な機能</h2>
+            <h2 className="text-3xl font-bold text-center text-slate-900 mb-12">選ばれる理由</h2>
             <div className="grid md:grid-cols-3 gap-8">
               <Card className="border-none shadow-lg">
                 <CardHeader>
-                  <Store className="h-10 w-10 text-blue-600 mb-4" />
-                  <CardTitle>多店舗一元管理</CardTitle>
+                  <Search className="h-10 w-10 text-blue-600 mb-4" />
+                  <CardTitle>Google連携でデータ取得</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-slate-600">
-                    複数のGoogleビジネスプロフィールアカウントを一元管理。
-                    各店舗のパフォーマンスを一覧で確認し、比較分析が可能です。
+                    Googleビジネスプロフィールと連携し、最新のクチコミやインサイトデータを自動取得。
+                    手入力の手間なく、正確な現状把握が可能です。
                   </p>
                 </CardContent>
               </Card>
               <Card className="border-none shadow-lg">
                 <CardHeader>
-                  <PenTool className="h-10 w-10 text-blue-600 mb-4" />
-                  <CardTitle>AI投稿作成支援</CardTitle>
+                  <Brain className="h-10 w-10 text-purple-600 mb-4" />
+                  <CardTitle>AIによるSWOT分析</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-slate-600">
-                    AIが効果的な投稿文案を自動生成。
-                    クチコミへの返信もAIがサポートし、運用工数を大幅に削減します。
+                    取得したデータをAIが解析し、店舗の[強み・弱み・機会・脅威]を明確化。
+                    客観的な視点で、独自の強みを洗い出します。
                   </p>
                 </CardContent>
               </Card>
               <Card className="border-none shadow-lg">
                 <CardHeader>
-                  <BarChart3 className="h-10 w-10 text-blue-600 mb-4" />
-                  <CardTitle>高度な分析</CardTitle>
+                  <Instagram className="h-10 w-10 text-pink-600 mb-4" />
+                  <CardTitle>Instagram投稿を自動生成</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-slate-600">
-                    Googleビジネスプロフィールのインサイトデータを詳細に分析。
-                    検索数、閲覧数、アクション数などの推移を可視化します。
+                    SWOT分析結果に基づき、ターゲット層に最も響く投稿文案とテーマをAIが提案。
+                    集客効果の高いSNS運用を実現します。
                   </p>
                 </CardContent>
               </Card>
@@ -125,7 +125,7 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* Google Integration Section (Crucial for OAuth Verification) */}
+        {/* Google Integration Section */}
         <section id="google" className="py-20 bg-slate-50 border-y">
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto">
@@ -150,32 +150,31 @@ export default async function Home() {
                     />
                   </svg>
                 </div>
-                <h2 className="text-3xl font-bold text-slate-900">Googleサービスとの連携</h2>
+                <h2 className="text-3xl font-bold text-slate-900">Googleサービスとのデータ連携</h2>
               </div>
 
               <div className="bg-white p-8 rounded-xl shadow-sm space-y-6">
                 <p className="text-lg text-slate-700 leading-relaxed">
-                  WINQERは、Googleアカウントを使用して安全にログインし、お客様のGoogleビジネスプロフィール（GBP）のデータを取得・管理します。
+                  WINQERは、Googleアカウント連携を通じて、精度の高い分析を実現します。
                 </p>
                 <ul className="space-y-4">
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-6 w-6 text-green-500 flex-shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="font-bold text-slate-900">データの読み取り</h4>
-                      <p className="text-sm text-slate-600">店舗情報、インサイト（分析データ）、クチコミ情報を自動取得し、ダッシュボードに反映します。</p>
+                      <h4 className="font-bold text-slate-900">情報の自動取得</h4>
+                      <p className="text-sm text-slate-600">Googleビジネスプロフィールから、店舗の基本情報、クチコミ、インサイトデータを読み取ります。</p>
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle2 className="h-6 w-6 text-green-500 flex-shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="font-bold text-slate-900">情報の管理</h4>
-                      <p className="text-sm text-slate-600">ダッシュボードから直接、最新情報やお知らせを投稿できます。</p>
+                      <h4 className="font-bold text-slate-900">SWOT分析への活用</h4>
+                      <p className="text-sm text-slate-600">取得した生の顧客データ（クチコミ等）をAIが解析し、より実践的なSWOT分析を行います。</p>
                     </div>
                   </li>
                 </ul>
                 <div className="pt-4 border-t text-sm text-slate-500">
-                  ※ 当サービスはお客様の同意なくデータを第三者に提供することはありません。
-                  詳細はプライバシーポリシーをご確認ください。
+                  ※ 取得したデータは分析および投稿案作成の目的のみに使用されます。第三者に無断で提供することはありません。
                 </div>
               </div>
             </div>
@@ -200,13 +199,14 @@ export default async function Home() {
                 <span className="font-bold text-white text-lg">WINQER</span>
               </div>
               <p className="text-sm text-slate-400 max-w-sm">
-                データに基づいた意思決定をサポートする、店舗経営のためのオールインワン・ダッシュボード。
+                SWOT分析 × Instagram生成AI<br />
+                店舗の集客を科学するプラットフォーム
               </p>
             </div>
             <div>
-              <h4 className="text-white font-bold mb-4">サービス</h4>
+              <h4 className="text-white font-bold mb-4">メニュー</h4>
               <ul className="space-y-2 text-sm">
-                <li><Link href="#features" className="hover:text-white">機能一覧</Link></li>
+                <li><Link href="#features" className="hover:text-white">機能の特徴</Link></li>
                 <li><Link href="/login" className="hover:text-white">ログイン</Link></li>
               </ul>
             </div>
