@@ -547,3 +547,44 @@ export async function getAllUsersAction() {
 
     return { success: true, users: data }
 }
+
+export async function deleteUserAction(targetUserId: string) {
+    const supabase = await getSupabase()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user || !(await isProviderAdmin(user.id))) {
+        return { success: false, error: "権限がありません: プロバイダー権限が必要です" }
+    }
+
+    if (user.id === targetUserId) {
+        return { success: false, error: "自分自身を削除することはできません" }
+    }
+
+    try {
+        const adminSupabase = getServiceSupabase()
+
+        // 1. Delete User from Auth
+        const { error: deleteError } = await adminSupabase.auth.admin.deleteUser(targetUserId)
+
+        if (deleteError) {
+            return { success: false, error: `ユーザー削除失敗: ${deleteError.message}` }
+        }
+
+        // 2. Audit Log
+        try {
+            await supabase.from('audit_logs').insert({
+                actor_id: user.id,
+                target_user_id: targetUserId,
+                action: 'DELETE_USER',
+                details: {}
+            })
+        } catch (auditError) {
+            console.error("Audit Log Error:", auditError)
+        }
+
+        return { success: true }
+    } catch (error: any) {
+        console.error("DeleteUser Error:", error)
+        return { success: false, error: error.message || "予期せぬエラーが発生しました" }
+    }
+}

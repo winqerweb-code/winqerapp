@@ -29,7 +29,8 @@ import {
     assignProviderAdminAction,
     removeProviderAdminAction,
     adminResetUserPasswordAction,
-    getAllUsersAction
+    getAllUsersAction,
+    deleteUserAction
 } from "@/app/actions/provider-actions"
 import { getStoreGoogleDataAction } from "@/app/actions/google-data"
 import { getStores } from "@/app/actions/store"
@@ -250,6 +251,42 @@ function UserManagement() {
         }
     }
 
+    const handleDeleteUser = async (userId: string, userEmail: string) => {
+        if (!confirm(`本当にユーザー ${userEmail} を削除しますか？\nこの操作は完全に取り消せません。`)) {
+            return
+        }
+
+        setIsLoading(true)
+        try {
+            const res = await deleteUserAction(userId)
+            if (res.success) {
+                toast({
+                    title: "削除完了",
+                    description: "ユーザーを削除しました。",
+                })
+                // Refresh list
+                const resUsers = await getAllUsersAction()
+                if (resUsers.success) {
+                    setUsers(resUsers.users || [])
+                }
+            } else {
+                toast({
+                    title: "エラー",
+                    description: res.error,
+                    variant: "destructive"
+                })
+            }
+        } catch (error) {
+            toast({
+                title: "エラー",
+                description: "予期せぬエラーが発生しました",
+                variant: "destructive"
+            })
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
     return (
         <div className="space-y-6 mt-4">
             <Card>
@@ -286,13 +323,22 @@ function UserManagement() {
                                                 <TableCell>{user.role}</TableCell>
                                                 <TableCell>{user.created_at ? new Date(user.created_at).toLocaleDateString() : '-'}</TableCell>
                                                 <TableCell className="text-right">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => setTargetEmail(user.email)}
-                                                    >
-                                                        選択
-                                                    </Button>
+                                                    <div className="flex justify-end gap-2">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => setTargetEmail(user.email)}
+                                                        >
+                                                            選択
+                                                        </Button>
+                                                        <Button
+                                                            variant="destructive"
+                                                            size="sm"
+                                                            onClick={() => handleDeleteUser(user.id, user.email)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                         ))
