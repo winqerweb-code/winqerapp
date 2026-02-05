@@ -7,8 +7,8 @@ import { StoreProvider } from "@/contexts/store-context"
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'WINQER Dashboard',
-  description: 'Marketing Dashboard for WINQER',
+  title: 'WINQER ダッシュボード',
+  description: 'WINQER用マーケティングダッシュボード',
 }
 
 export default function RootLayout({
@@ -17,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="ja" className="dark">
       <body className={inter.className}>
         <StoreProvider>
           {children}

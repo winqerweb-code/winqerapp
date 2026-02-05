@@ -56,7 +56,7 @@ function SidebarContent({ isAdmin, onLinkClick }: { isAdmin?: boolean, onLinkCli
     return (
         <div className="flex h-full flex-col text-card-foreground">
             <div className="flex h-16 items-center border-b px-6">
-                <div className="relative h-10 w-32">
+                <div className="relative h-10 w-10">
                     <Image
                         src="/images/logo.png"
                         alt="WINQER"
@@ -114,7 +114,7 @@ function SidebarContent({ isAdmin, onLinkClick }: { isAdmin?: boolean, onLinkCli
                     className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                 >
                     <LogOut className="h-4 w-4" />
-                    Log out
+                    ログアウト
                 </button>
             </div>
         </div>

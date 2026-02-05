@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { MOCK_STORES } from "@/lib/mock-data"
 import { useStore } from "@/contexts/store-context"
 import { getStores } from "@/app/actions/store"
@@ -21,7 +22,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Plus, MapPin, Phone, ExternalLink } from "lucide-react"
+import { Plus, MapPin, Phone, ExternalLink, Loader2 } from "lucide-react"
 import Link from "next/link"
 import {
     Dialog,
@@ -34,35 +35,52 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
-
 import { checkAdminStatusAction } from "@/app/actions/provider-actions"
 
 export default function StoresPage() {
+    const router = useRouter()
     const { stores, setStores, setSelectedStore } = useStore()
     const [open, setOpen] = useState(false)
     const [newStoreName, setNewStoreName] = useState("")
     const [newStoreAddress, setNewStoreAddress] = useState("")
     const [newStorePhone, setNewStorePhone] = useState("")
     const [isAdmin, setIsAdmin] = useState(false)
+    const [initializing, setInitializing] = useState(true)
     const { toast } = useToast()
 
     // Fetch stores on mount to ensure context is populated
     useEffect(() => {
-        const fetchStores = async () => {
-            const result = await getStores()
-            if (result.success && result.stores) {
-                setStores(result.stores)
+        const init = async () => {
+            try {
+                const [storesResult, adminResult] = await Promise.all([
+                    getStores(),
+                    checkAdminStatusAction()
+                ])
+
+                const isProvider = adminResult.isAdmin
+                setIsAdmin(isProvider)
+
+                if (storesResult.success && storesResult.stores) {
+                    setStores(storesResult.stores)
+
+                    // Auto-Redirect Rule:
+                    // If user is NOT a Provider Admin (regular user)
+                    // AND they have exactly one store assigned
+                    // THEN redirect immediately to that store's dashboard.
+                    if (!isProvider && storesResult.stores.length === 1) {
+                        router.push(`/dashboard/stores/${storesResult.stores[0].id}`)
+                        return
+                    }
+                }
+            } catch (error) {
+                console.error("Initialization failed:", error)
+            } finally {
+                setInitializing(false)
             }
         }
 
-        const checkAdmin = async () => {
-            const res = await checkAdminStatusAction()
-            setIsAdmin(res.isAdmin)
-        }
-
-        fetchStores()
-        checkAdmin()
-    }, [setStores])
+        init()
+    }, [setStores, router])
 
     const handleAddStore = async () => {
         // ... (existing logic)

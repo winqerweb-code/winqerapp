@@ -78,9 +78,9 @@ export default function LoginPage() {
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
                     <div className="flex justify-center mb-4">
-                        <div className="relative h-12 w-48">
+                        <div className="relative h-32 w-32">
                             <Image
-                                src="/images/logo-black.png"
+                                src="/images/logo.png"
                                 alt="WINQER"
                                 fill
                                 className="object-contain"

@@ -215,18 +215,15 @@ export default function StorePage() {
                         <Sparkles className="h-4 w-4" />
                         投稿生成
                     </TabsTrigger>
+                    <TabsTrigger value="strategy" className="flex items-center gap-2">
+                        <Target className="h-4 w-4" />
+                        戦略設定
+                    </TabsTrigger>
                     {isAdmin && (
-                        <>
-                            <TabsTrigger value="strategy" className="flex items-center gap-2">
-                                <Target className="h-4 w-4" />
-                                戦略設定
-                            </TabsTrigger>
-
-                            <TabsTrigger value="settings" className="flex items-center gap-2">
-                                <Settings className="h-4 w-4" />
-                                店舗設定
-                            </TabsTrigger>
-                        </>
+                        <TabsTrigger value="settings" className="flex items-center gap-2">
+                            <Settings className="h-4 w-4" />
+                            店舗設定
+                        </TabsTrigger>
                     )}
                 </TabsList>
 
@@ -238,13 +235,11 @@ export default function StorePage() {
                 </TabsContent>
 
                 {/* Tab 2: Strategy */}
-                {isAdmin && (
-                    <TabsContent value="strategy" className="space-y-4">
-                        <div className="border rounded-lg bg-card p-4 shadow-sm">
-                            <StrategyView />
-                        </div>
-                    </TabsContent>
-                )}
+                <TabsContent value="strategy" className="space-y-4">
+                    <div className="border rounded-lg bg-card p-4 shadow-sm">
+                        <StrategyView isAdmin={isAdmin} />
+                    </div>
+                </TabsContent>
 
                 {/* Tab 3: Settings (Original Layout) */}
                 {isAdmin && (

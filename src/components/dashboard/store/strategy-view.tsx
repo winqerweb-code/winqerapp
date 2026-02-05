@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, Copy, Check, Save } from "lucide-react"
+import { Loader2, Copy, Check, Save, Pencil, X, Sparkles } from "lucide-react"
 import { useStore } from "@/contexts/store-context"
 import { saveStrategy, getStrategy } from "@/app/actions/strategy"
 import { useToast } from "@/components/ui/use-toast"
@@ -61,12 +61,17 @@ const INITIAL_STATE: StrategyInput = {
     brand: { ng_expressions: "", desired_image: "" },
 }
 
-export function StrategyView() {
+interface StrategyViewProps {
+    isAdmin?: boolean
+}
+
+export function StrategyView({ isAdmin = false }: StrategyViewProps) {
     const { selectedStore } = useStore()
     const [formData, setFormData] = useState<StrategyInput>(INITIAL_STATE)
     const [loading, setLoading] = useState(false)
     const [saving, setSaving] = useState(false)
     const [result, setResult] = useState<any>(null)
+    const [isEditing, setIsEditing] = useState(false)
     const [copied, setCopied] = useState(false)
     const { toast } = useToast()
 
@@ -209,6 +214,29 @@ export function StrategyView() {
         navigator.clipboard.writeText(text)
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
+    }
+
+    const updateResultDeep = (path: string[], value: any) => {
+        setResult((prev: any) => {
+            const newState = JSON.parse(JSON.stringify(prev))
+            let current = newState
+            for (let i = 0; i < path.length - 1; i++) {
+                if (!current[path[i]]) current[path[i]] = {}
+                current = current[path[i]]
+            }
+            current[path[path.length - 1]] = value
+            return newState
+        })
+    }
+
+    const handleArrayItemChange = (section: string, index: number, field: string, value: any) => {
+        setResult((prev: any) => {
+            const newState = JSON.parse(JSON.stringify(prev))
+            if (newState[section] && newState[section][index]) {
+                newState[section][index][field] = value
+            }
+            return newState
+        })
     }
 
     return (
@@ -528,16 +556,34 @@ export function StrategyView() {
                     </CardContent>
                 </Card>
 
-                <Button size="lg" className="w-full" onClick={generateStrategy} disabled={loading}>
+                <Button
+                    size="lg"
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                    onClick={generateStrategy}
+                    disabled={loading || (!isAdmin && !!result)}
+                >
                     {loading ? (
                         <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             戦略を生成中...
                         </>
+                    ) : (!isAdmin && result) ? (
+                        <>
+                            <Check className="mr-2 h-4 w-4" />
+                            生成済み (再生成は管理者のみ)
+                        </>
                     ) : (
-                        "戦略を生成する"
+                        <>
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            戦略を生成する
+                        </>
                     )}
                 </Button>
+                {(!isAdmin && result) && (
+                    <p className="text-xs text-center text-amber-600 font-medium">
+                        ※AI戦略の再生成は管理者権限が必要です。修正はページ下部の「編集」機能をご利用ください。
+                    </p>
+                )}
             </div>
 
             {/* Result Section */}
@@ -546,6 +592,14 @@ export function StrategyView() {
                     <div className="flex items-center justify-between">
                         <h2 className="text-2xl font-bold">生成された戦略</h2>
                         <div className="flex gap-2">
+                            <Button
+                                variant={isEditing ? "secondary" : "outline"}
+                                size="sm"
+                                onClick={() => setIsEditing(!isEditing)}
+                            >
+                                {isEditing ? <X className="h-4 w-4 mr-2" /> : <Pencil className="h-4 w-4 mr-2" />}
+                                {isEditing ? "編集を終了" : "編集する"}
+                            </Button>
                             <Button variant="outline" size="sm" onClick={() => handleSave()} disabled={saving || !selectedStore}>
                                 {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
                                 {saving ? "保存中..." : "保存する"}
@@ -564,19 +618,51 @@ export function StrategyView() {
                             <CardContent className="space-y-4">
                                 <div>
                                     <h4 className="font-semibold text-blue-600">Strengths (強み)</h4>
-                                    <ul className="list-disc pl-5 text-sm">{result.swot?.strengths?.map((i: string, idx: number) => <li key={idx}>{i}</li>)}</ul>
+                                    {isEditing ? (
+                                        <Textarea
+                                            value={result.swot?.strengths?.join('\n')}
+                                            onChange={(e) => updateResultDeep(['swot', 'strengths'], e.target.value.split('\n'))}
+                                            className="min-h-[100px]"
+                                        />
+                                    ) : (
+                                        <ul className="list-disc pl-5 text-sm">{result.swot?.strengths?.map((i: string, idx: number) => <li key={idx}>{i}</li>)}</ul>
+                                    )}
                                 </div>
                                 <div>
                                     <h4 className="font-semibold text-red-600">Weaknesses (弱み)</h4>
-                                    <ul className="list-disc pl-5 text-sm">{result.swot?.weaknesses?.map((i: string, idx: number) => <li key={idx}>{i}</li>)}</ul>
+                                    {isEditing ? (
+                                        <Textarea
+                                            value={result.swot?.weaknesses?.join('\n')}
+                                            onChange={(e) => updateResultDeep(['swot', 'weaknesses'], e.target.value.split('\n'))}
+                                            className="min-h-[100px]"
+                                        />
+                                    ) : (
+                                        <ul className="list-disc pl-5 text-sm">{result.swot?.weaknesses?.map((i: string, idx: number) => <li key={idx}>{i}</li>)}</ul>
+                                    )}
                                 </div>
                                 <div>
                                     <h4 className="font-semibold text-green-600">Opportunities (機会)</h4>
-                                    <ul className="list-disc pl-5 text-sm">{result.swot?.opportunities?.map((i: string, idx: number) => <li key={idx}>{i}</li>)}</ul>
+                                    {isEditing ? (
+                                        <Textarea
+                                            value={result.swot?.opportunities?.join('\n')}
+                                            onChange={(e) => updateResultDeep(['swot', 'opportunities'], e.target.value.split('\n'))}
+                                            className="min-h-[100px]"
+                                        />
+                                    ) : (
+                                        <ul className="list-disc pl-5 text-sm">{result.swot?.opportunities?.map((i: string, idx: number) => <li key={idx}>{i}</li>)}</ul>
+                                    )}
                                 </div>
                                 <div>
                                     <h4 className="font-semibold text-yellow-600">Threats (脅威)</h4>
-                                    <ul className="list-disc pl-5 text-sm">{result.swot?.threats?.map((i: string, idx: number) => <li key={idx}>{i}</li>)}</ul>
+                                    {isEditing ? (
+                                        <Textarea
+                                            value={result.swot?.threats?.join('\n')}
+                                            onChange={(e) => updateResultDeep(['swot', 'threats'], e.target.value.split('\n'))}
+                                            className="min-h-[100px]"
+                                        />
+                                    ) : (
+                                        <ul className="list-disc pl-5 text-sm">{result.swot?.threats?.map((i: string, idx: number) => <li key={idx}>{i}</li>)}</ul>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -587,15 +673,36 @@ export function StrategyView() {
                             <CardContent className="space-y-4">
                                 <div>
                                     <h4 className="font-semibold">Segmentation (セグメンテーション)</h4>
-                                    <p className="text-sm">{result.stp.segmentation}</p>
+                                    {isEditing ? (
+                                        <Textarea
+                                            value={result.stp.segmentation}
+                                            onChange={(e) => updateResultDeep(['stp', 'segmentation'], e.target.value)}
+                                        />
+                                    ) : (
+                                        <p className="text-sm">{result.stp.segmentation}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <h4 className="font-semibold">Targeting (ターゲティング)</h4>
-                                    <p className="text-sm">{result.stp.targeting}</p>
+                                    {isEditing ? (
+                                        <Textarea
+                                            value={result.stp.targeting}
+                                            onChange={(e) => updateResultDeep(['stp', 'targeting'], e.target.value)}
+                                        />
+                                    ) : (
+                                        <p className="text-sm">{result.stp.targeting}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <h4 className="font-semibold">Positioning (ポジショニング)</h4>
-                                    <p className="text-sm">{result.stp.positioning}</p>
+                                    {isEditing ? (
+                                        <Textarea
+                                            value={result.stp.positioning}
+                                            onChange={(e) => updateResultDeep(['stp', 'positioning'], e.target.value)}
+                                        />
+                                    ) : (
+                                        <p className="text-sm">{result.stp.positioning}</p>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -606,19 +713,47 @@ export function StrategyView() {
                             <CardContent className="grid md:grid-cols-2 gap-4">
                                 <div>
                                     <h4 className="font-semibold">デモグラフィック属性</h4>
-                                    <p className="text-sm">{result.persona.demographics}</p>
+                                    {isEditing ? (
+                                        <Textarea
+                                            value={result.persona.demographics}
+                                            onChange={(e) => updateResultDeep(['persona', 'demographics'], e.target.value)}
+                                        />
+                                    ) : (
+                                        <p className="text-sm">{result.persona.demographics}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <h4 className="font-semibold">サイコグラフィック属性</h4>
-                                    <p className="text-sm">{result.persona.psychographics}</p>
+                                    {isEditing ? (
+                                        <Textarea
+                                            value={result.persona.psychographics}
+                                            onChange={(e) => updateResultDeep(['persona', 'psychographics'], e.target.value)}
+                                        />
+                                    ) : (
+                                        <p className="text-sm">{result.persona.psychographics}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <h4 className="font-semibold">悩み・課題 (Pain Points)</h4>
-                                    <p className="text-sm">{result.persona.pain_points}</p>
+                                    {isEditing ? (
+                                        <Textarea
+                                            value={result.persona.pain_points}
+                                            onChange={(e) => updateResultDeep(['persona', 'pain_points'], e.target.value)}
+                                        />
+                                    ) : (
+                                        <p className="text-sm">{result.persona.pain_points}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <h4 className="font-semibold">ニーズ・願望 (Needs)</h4>
-                                    <p className="text-sm">{result.persona.needs}</p>
+                                    {isEditing ? (
+                                        <Textarea
+                                            value={result.persona.needs}
+                                            onChange={(e) => updateResultDeep(['persona', 'needs'], e.target.value)}
+                                        />
+                                    ) : (
+                                        <p className="text-sm">{result.persona.needs}</p>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -630,16 +765,38 @@ export function StrategyView() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <h4 className="font-semibold">目標CPA</h4>
-                                        <p className="text-lg font-bold text-primary">{result.strategy_summary.target_cpa}</p>
+                                        {isEditing ? (
+                                            <Input
+                                                value={result.strategy_summary.target_cpa}
+                                                onChange={(e) => updateResultDeep(['strategy_summary', 'target_cpa'], e.target.value)}
+                                            />
+                                        ) : (
+                                            <p className="text-lg font-bold text-primary">{result.strategy_summary.target_cpa}</p>
+                                        )}
                                     </div>
                                     <div>
                                         <h4 className="font-semibold">想定広告予算</h4>
-                                        <p className="text-lg font-bold text-primary">{result.strategy_summary.estimated_budget}</p>
+                                        {isEditing ? (
+                                            <Input
+                                                value={result.strategy_summary.estimated_budget}
+                                                onChange={(e) => updateResultDeep(['strategy_summary', 'estimated_budget'], e.target.value)}
+                                            />
+                                        ) : (
+                                            <p className="text-lg font-bold text-primary">{result.strategy_summary.estimated_budget}</p>
+                                        )}
                                     </div>
                                 </div>
                                 <div>
                                     <h4 className="font-semibold">戦略的アドバイス</h4>
-                                    <p className="text-sm">{result.strategy_summary.advice}</p>
+                                    {isEditing ? (
+                                        <Textarea
+                                            value={result.strategy_summary.advice}
+                                            onChange={(e) => updateResultDeep(['strategy_summary', 'advice'], e.target.value)}
+                                            className="min-h-[100px]"
+                                        />
+                                    ) : (
+                                        <p className="text-sm">{result.strategy_summary.advice}</p>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -652,12 +809,28 @@ export function StrategyView() {
                                     <div key={idx} className="border p-4 rounded-lg">
                                         <h4 className="font-bold mb-2 flex items-center">
                                             <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded mr-2">推奨</span>
-                                            {media.name}
+                                            {isEditing ? (
+                                                <Input
+                                                    value={media.name}
+                                                    onChange={(e) => handleArrayItemChange('recommended_media', idx, 'name', e.target.value)}
+                                                    className="max-w-[300px]"
+                                                />
+                                            ) : (
+                                                media.name
+                                            )}
                                         </h4>
-                                        <p className="text-sm text-muted-foreground">
+                                        <div className="text-sm text-muted-foreground">
                                             <span className="font-semibold text-foreground">選定理由：</span>
-                                            {media.reasoning}
-                                        </p>
+                                            {isEditing ? (
+                                                <Textarea
+                                                    value={media.reasoning}
+                                                    onChange={(e) => handleArrayItemChange('recommended_media', idx, 'reasoning', e.target.value)}
+                                                    className="mt-2"
+                                                />
+                                            ) : (
+                                                media.reasoning
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </CardContent>
@@ -669,15 +842,39 @@ export function StrategyView() {
                             <CardContent className="grid gap-4">
                                 {result.appeal_points?.map((point: any, idx: number) => (
                                     <div key={idx} className="border p-4 rounded-lg">
-                                        <h4 className="font-bold mb-2 text-lg">{point.title}</h4>
+                                        {isEditing ? (
+                                            <Input
+                                                value={point.title}
+                                                onChange={(e) => handleArrayItemChange('appeal_points', idx, 'title', e.target.value)}
+                                                className="mb-2 font-bold"
+                                            />
+                                        ) : (
+                                            <h4 className="font-bold mb-2 text-lg">{point.title}</h4>
+                                        )}
                                         <div className="bg-muted p-3 rounded-md mb-2">
                                             <p className="text-xs font-semibold text-muted-foreground mb-1">広告コピー案</p>
-                                            <p className="font-medium text-primary">「{point.ad_copy_example}」</p>
+                                            {isEditing ? (
+                                                <Input
+                                                    value={point.ad_copy_example}
+                                                    onChange={(e) => handleArrayItemChange('appeal_points', idx, 'ad_copy_example', e.target.value)}
+                                                    className="font-medium"
+                                                />
+                                            ) : (
+                                                <p className="font-medium text-primary">「{point.ad_copy_example}」</p>
+                                            )}
                                         </div>
-                                        <p className="text-sm text-muted-foreground">
+                                        <div className="text-sm text-muted-foreground">
                                             <span className="font-semibold text-foreground">なぜ刺さるか：</span>
-                                            {point.reasoning}
-                                        </p>
+                                            {isEditing ? (
+                                                <Textarea
+                                                    value={point.reasoning}
+                                                    onChange={(e) => handleArrayItemChange('appeal_points', idx, 'reasoning', e.target.value)}
+                                                    className="mt-2"
+                                                />
+                                            ) : (
+                                                point.reasoning
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </CardContent>
@@ -689,14 +886,49 @@ export function StrategyView() {
                             <CardContent>
                                 <div className="relative">
                                     {result.funnel_design?.steps?.map((step: any, idx: number) => (
-                                        <div key={idx} className="flex items-start mb-6 last:mb-0 relative z-10">
+                                        <div key={idx} className="flex items-start mb-6 last:mb-0 relative z-10 w-full">
                                             <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold mr-4">
                                                 {idx + 1}
                                             </div>
-                                            <div>
-                                                <h4 className="font-bold">{step.step}</h4>
-                                                <p className="text-sm text-muted-foreground mb-1">{step.role}</p>
-                                                <p className="text-sm bg-muted p-2 rounded">{step.content_idea}</p>
+                                            <div className="w-full">
+                                                {isEditing ? (
+                                                    <div className="space-y-2">
+                                                        <Input
+                                                            value={step.step}
+                                                            onChange={(e) => {
+                                                                const newSteps = [...result.funnel_design.steps]
+                                                                newSteps[idx].step = e.target.value
+                                                                updateResultDeep(['funnel_design', 'steps'], newSteps)
+                                                            }}
+                                                            className="font-bold"
+                                                            placeholder="フェーズ名"
+                                                        />
+                                                        <Input
+                                                            value={step.role}
+                                                            onChange={(e) => {
+                                                                const newSteps = [...result.funnel_design.steps]
+                                                                newSteps[idx].role = e.target.value
+                                                                updateResultDeep(['funnel_design', 'steps'], newSteps)
+                                                            }}
+                                                            placeholder="役割"
+                                                        />
+                                                        <Textarea
+                                                            value={step.content_idea}
+                                                            onChange={(e) => {
+                                                                const newSteps = [...result.funnel_design.steps]
+                                                                newSteps[idx].content_idea = e.target.value
+                                                                updateResultDeep(['funnel_design', 'steps'], newSteps)
+                                                            }}
+                                                            placeholder="施策アイデア"
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <h4 className="font-bold">{step.step}</h4>
+                                                        <p className="text-sm text-muted-foreground mb-1">{step.role}</p>
+                                                        <p className="text-sm bg-muted p-2 rounded">{step.content_idea}</p>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -713,7 +945,15 @@ export function StrategyView() {
                                 {result.instagram_posts?.map((post: any, idx: number) => (
                                     <div key={idx} className="border rounded-lg overflow-hidden">
                                         <div className="bg-muted px-4 py-2 border-b flex justify-between items-center">
-                                            <h4 className="font-bold text-sm">投稿案 {idx + 1}: {post.title}</h4>
+                                            {isEditing ? (
+                                                <Input
+                                                    value={post.title}
+                                                    onChange={(e) => handleArrayItemChange('instagram_posts', idx, 'title', e.target.value)}
+                                                    className="h-8 max-w-[300px]"
+                                                />
+                                            ) : (
+                                                <h4 className="font-bold text-sm">投稿案 {idx + 1}: {post.title}</h4>
+                                            )}
                                             <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => navigator.clipboard.writeText(post.body)}>
                                                 <Copy className="h-3 w-3 mr-1" /> 本文コピー
                                             </Button>
@@ -721,18 +961,40 @@ export function StrategyView() {
                                         <div className="p-4 space-y-4">
                                             <div>
                                                 <p className="text-xs font-semibold text-muted-foreground mb-1">投稿本文</p>
-                                                <div className="p-3 rounded-md text-sm whitespace-pre-wrap font-mono bg-muted">
-                                                    {post.body}
-                                                </div>
+                                                {isEditing ? (
+                                                    <Textarea
+                                                        value={post.body}
+                                                        onChange={(e) => handleArrayItemChange('instagram_posts', idx, 'body', e.target.value)}
+                                                        className="font-mono min-h-[150px]"
+                                                    />
+                                                ) : (
+                                                    <div className="p-3 rounded-md text-sm whitespace-pre-wrap font-mono bg-muted">
+                                                        {post.body}
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="grid md:grid-cols-2 gap-4 text-sm">
                                                 <div>
                                                     <span className="font-semibold block text-muted-foreground text-xs">狙い</span>
-                                                    {post.purpose}
+                                                    {isEditing ? (
+                                                        <Textarea
+                                                            value={post.purpose}
+                                                            onChange={(e) => handleArrayItemChange('instagram_posts', idx, 'purpose', e.target.value)}
+                                                        />
+                                                    ) : (
+                                                        post.purpose
+                                                    )}
                                                 </div>
                                                 <div>
                                                     <span className="font-semibold block text-muted-foreground text-xs">なぜ刺さるか</span>
-                                                    {post.reasoning}
+                                                    {isEditing ? (
+                                                        <Textarea
+                                                            value={post.reasoning}
+                                                            onChange={(e) => handleArrayItemChange('instagram_posts', idx, 'reasoning', e.target.value)}
+                                                        />
+                                                    ) : (
+                                                        post.reasoning
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>

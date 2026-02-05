@@ -35,14 +35,13 @@ export async function saveStrategy(storeId: string, inputData: any, outputData: 
         return { success: false, error: 'Unauthorized' }
     }
 
-    // RBAC Check (Only Provider Admin can update strategy currently, matching UI)
-    // If we want Store Admin to update, we can check role === 'STORE_ADMIN'
+    // RBAC Check (Allow Store Admin to update)
     const { hasAccess } = await verifyStoreAccess(user.id, storeId)
-    const isProvider = await isProviderAdmin(user.id)
+    // const isProvider = await isProviderAdmin(user.id) // Removed strict provider check
 
-    // Strict: Only Provider Admin can save strategy
-    if (!hasAccess || !isProvider) {
-        return { success: false, error: 'Unauthorized: Only Provider Admin can update strategy' }
+    // Allow if user has access to the store (Provider Admin OR Assigned Store Admin)
+    if (!hasAccess) {
+        return { success: false, error: 'Unauthorized: Access Denied' }
     }
 
     // Upsert strategy
