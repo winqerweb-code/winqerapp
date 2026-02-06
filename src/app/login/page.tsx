@@ -4,12 +4,16 @@ import { useState } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { signInWithGoogle } from "@/lib/auth"
+import { Input } from "@/components/ui/input"
+import { signInWithGoogle, signInWithEmail, signUpWithEmail } from "@/lib/auth"
 import { useToast } from "@/components/ui/use-toast"
 import { Loader2 } from "lucide-react"
 
 export default function LoginPage() {
     const [loading, setLoading] = useState(false)
+    const [isSignUp, setIsSignUp] = useState(false)
+    const [email, setEmail] = useState("")
+    const [password, setPassword] = useState("")
     const { toast } = useToast()
 
     const handleGoogleLogin = async () => {
@@ -20,6 +24,33 @@ export default function LoginPage() {
             console.error("Login failed:", error)
             setLoading(false)
             toast({ title: "ログインに失敗しました", description: "もう一度お試しください", variant: "destructive" })
+        }
+    }
+
+    const handleEmailAuth = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setLoading(true)
+        try {
+            if (isSignUp) {
+                await signUpWithEmail(email, password)
+                toast({ title: "確認メールを送信しました", description: "メール内のリンクをクリックして登録を完了してください" })
+            } else {
+                await signInWithEmail(email, password)
+                // Redirect will be handled by auth state change or middleware usually, 
+                // but if not, we might need manual redirect. 
+                // Assuming auth listener handles it or user stays on page until redirect.
+                // For now, let's assume successful login leads to dashboard via middleware/auth hook.
+                window.location.href = "/dashboard";
+            }
+        } catch (error: any) {
+            console.error("Auth failed:", error)
+            toast({
+                title: isSignUp ? "登録に失敗しました" : "ログインに失敗しました",
+                description: error.message || "もう一度お試しください",
+                variant: "destructive"
+            })
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -38,11 +69,56 @@ export default function LoginPage() {
                             />
                         </div>
                     </div>
+                    <CardTitle className="text-2xl mb-2">{isSignUp ? "アカウント作成" : "ログイン"}</CardTitle>
                     <CardDescription>
-                        Googleアカウントでログインして<br />ダッシュボードにアクセスしてください
+                        {isSignUp
+                            ? "メールアドレスとパスワードで登録してください"
+                            : "メールアドレスまたはGoogleアカウントでログインしてください"}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
+                    <form onSubmit={handleEmailAuth} className="flex flex-col gap-4 mb-4">
+                        <div className="space-y-2">
+                            <Input
+                                type="email"
+                                placeholder="メールアドレス"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                disabled={loading}
+                            />
+                            <Input
+                                type="password"
+                                placeholder="パスワード"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                disabled={loading}
+                                minLength={6}
+                            />
+                        </div>
+                        <Button
+                            type="submit"
+                            className="w-full h-12 text-base"
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                isSignUp ? "アカウント登録" : "ログイン"
+                            )}
+                        </Button>
+                    </form>
+
+                    <div className="relative mb-4">
+                        <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-background px-2 text-muted-foreground">または</span>
+                        </div>
+                    </div>
+
                     <div className="flex flex-col gap-4">
                         <Button
                             variant="outline"
@@ -73,6 +149,19 @@ export default function LoginPage() {
                                 </svg>
                             )}
                             Googleでログイン
+                        </Button>
+                    </div>
+                    <div className="mt-4 text-center text-sm">
+                        <span className="text-muted-foreground">
+                            {isSignUp ? "すでにアカウントをお持ちですか？" : "アカウントをお持ちでないですか？"}
+                        </span>
+                        <Button
+                            variant="link"
+                            className="pl-2 font-semibold text-primary"
+                            onClick={() => setIsSignUp(!isSignUp)}
+                            disabled={loading}
+                        >
+                            {isSignUp ? "ログイン" : "新規登録"}
                         </Button>
                     </div>
                 </CardContent>
