@@ -9,6 +9,7 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'WINQER ダッシュボード',
   description: 'WINQER用マーケティングダッシュボード',
+  metadataBase: new URL('https://app.sumatoko.com'),
 }
 
 export default function RootLayout({
