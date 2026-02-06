@@ -33,7 +33,11 @@ export default function LoginPage() {
         try {
             if (isSignUp) {
                 await signUpWithEmail(email, password)
-                toast({ title: "確認メールを送信しました", description: "メール内のリンクをクリックして登録を完了してください" })
+                toast({
+                    title: "確認メールを送信しました",
+                    description: "メール内のリンクをクリックして登録を完了してください。リンクをクリックするまでログインはできません。",
+                    duration: 6000,
+                })
             } else {
                 await signInWithEmail(email, password)
                 // Redirect will be handled by auth state change or middleware usually, 
@@ -52,6 +56,8 @@ export default function LoginPage() {
                 errorMessage = "メールアドレスまたはパスワードが間違っています";
             } else if (error.message.includes("Password should be at least")) {
                 errorMessage = "パスワードは6文字以上で入力してください";
+            } else if (error.message.includes("Email not confirmed")) {
+                errorMessage = "メールアドレスの認証が完了していません。送信されたメールを確認してください。";
             }
 
             toast({
