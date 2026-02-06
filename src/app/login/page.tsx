@@ -5,7 +5,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { signInWithGoogle, signInWithEmail, signUpWithEmail } from "@/lib/auth"
+import { signInWithGoogle, signInWithEmail, signUpWithEmail, supabase } from "@/lib/auth"
 import { useToast } from "@/components/ui/use-toast"
 import { Loader2 } from "lucide-react"
 
@@ -39,7 +39,14 @@ export default function LoginPage() {
                     duration: 6000,
                 })
             } else {
-                await signInWithEmail(email, password)
+                const data = await signInWithEmail(email, password)
+
+                // Strict check: If email is not confirmed, sign out immediately
+                if (data.user && !data.user.email_confirmed_at) {
+                    await supabase.auth.signOut()
+                    throw new Error("Email not confirmed")
+                }
+
                 // Redirect will be handled by auth state change or middleware usually, 
                 // but if not, we might need manual redirect. 
                 // Assuming auth listener handles it or user stays on page until redirect.
