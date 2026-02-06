@@ -1,6 +1,7 @@
 'use server'
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { Store } from '@/types/store'
 
@@ -166,8 +167,26 @@ export async function createStoreSelfService(data: Omit<Store, 'id' | 'created_a
         return { success: false, error: 'Failed to create business' }
     }
 
-    // 2. Assign the user as STORE_ADMIN
-    const { error: assignError } = await supabase
+    // 2. Assign the user as STORE_ADMIN using Admin Client (Bypass RLS)
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!serviceRoleKey) {
+        console.error('CreateStore: MISSING SUPABASE_SERVICE_ROLE_KEY. Cannot assign admin role.')
+        await supabase.from('stores').delete().eq('id', createdStore.id)
+        return { success: false, error: 'Configuration Error: Missing Service Role Key' }
+    }
+
+    const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        serviceRoleKey,
+        {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false
+            }
+        }
+    )
+
+    const { error: assignError } = await supabaseAdmin
         .from('store_assignments')
         .insert({
             user_id: user.id,
@@ -177,11 +196,9 @@ export async function createStoreSelfService(data: Omit<Store, 'id' | 'created_a
 
     if (assignError) {
         console.error('Failed to assign admin role:', assignError)
-        // Optional: Delete the orphaned store if assignment fails? 
-        // For now, let's keep it but return error, user might need support or retry.
-        // Or we can try to delete it to keep atomic-ish behavior.
-        await supabase.from('stores').delete().eq('id', createdStore.id)
-        return { success: false, error: 'Failed to assign permissions' }
+        // Cleanup store on failure
+        await supabaseAdmin.from('stores').delete().eq('id', createdStore.id)
+        return { success: false, error: 'Failed to assign permissions: ' + assignError.message }
     }
 
     return { success: true, store: createdStore as Store }
