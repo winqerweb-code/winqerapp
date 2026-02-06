@@ -44,9 +44,19 @@ export default function LoginPage() {
             }
         } catch (error: any) {
             console.error("Auth failed:", error)
+
+            let errorMessage = "もう一度お試しください";
+            if (error.message === "User already registered") {
+                errorMessage = "このメールアドレスは既に登録されています";
+            } else if (error.message === "Invalid login credentials") {
+                errorMessage = "メールアドレスまたはパスワードが間違っています";
+            } else if (error.message.includes("Password should be at least")) {
+                errorMessage = "パスワードは6文字以上で入力してください";
+            }
+
             toast({
                 title: isSignUp ? "登録に失敗しました" : "ログインに失敗しました",
-                description: error.message || "もう一度お試しください",
+                description: errorMessage,
                 variant: "destructive"
             })
         } finally {
