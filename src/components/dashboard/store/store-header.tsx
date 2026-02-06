@@ -18,7 +18,7 @@ export function StoreHeader({ name, storeId, isAdmin }: StoreHeaderProps) {
             </Button>
             <div>
                 <h2 className="text-3xl font-bold tracking-tight">{name}</h2>
-                <p className="text-muted-foreground">店舗詳細と連携設定</p>
+                <p className="text-muted-foreground">事業詳細と連携設定</p>
             </div>
             {isAdmin && (
                 <div className="ml-auto">

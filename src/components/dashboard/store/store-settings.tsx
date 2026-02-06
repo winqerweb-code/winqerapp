@@ -47,11 +47,11 @@ export function StoreSettings({
                     <MapPin className="h-5 w-5 text-blue-600" />
                     基本情報
                 </CardTitle>
-                <p className="text-sm text-muted-foreground">店舗の基本情報を編集します。</p>
+                <p className="text-sm text-muted-foreground">事業の基本情報を編集します。</p>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">
-                    <Label htmlFor="name">店舗名</Label>
+                    <Label htmlFor="name">事業名</Label>
                     <Input
                         id="name"
                         value={name}

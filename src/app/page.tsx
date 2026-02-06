@@ -63,12 +63,12 @@ export default async function Home() {
         <section className="py-20 md:py-32 bg-gradient-to-b from-white to-slate-50">
           <div className="container mx-auto px-4 text-center">
             <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-slate-900 mb-6">
-              店舗の「強み」を最大化。<br className="hidden md:block" />
+              事業の「強み」を最大化。<br className="hidden md:block" />
               SWOT分析から、最適な投稿を自動生成。
             </h1>
             <p className="text-lg md:text-xl text-slate-600 mb-10 max-w-2xl mx-auto">
               WINQER（ウィンカー）は、GoogleビジネスプロフィールのデータをAIが分析。
-              店舗ごとの強み（Strengths）を活かしたInstagram投稿を自動で作成します。
+              事業ごとの強み（Strengths）を活かしたInstagram投稿を自動で作成します。
             </p>
             <div className="flex justify-center gap-4">
               <Link href="/login">
@@ -104,7 +104,7 @@ export default async function Home() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-slate-600">
-                    取得したデータをAIが解析し、店舗の[強み・弱み・機会・脅威]を明確化。
+                    取得したデータをAIが解析し、事業の[強み・弱み・機会・脅威]を明確化。
                     客観的な視点で、独自の強みを洗い出します。
                   </p>
                 </CardContent>
@@ -162,7 +162,7 @@ export default async function Home() {
                     <CheckCircle2 className="h-6 w-6 text-green-500 flex-shrink-0 mt-0.5" />
                     <div>
                       <h4 className="font-bold text-slate-900">情報の自動取得</h4>
-                      <p className="text-sm text-slate-600">Googleビジネスプロフィールから、店舗の基本情報、クチコミ、インサイトデータを読み取ります。</p>
+                      <p className="text-sm text-slate-600">Googleビジネスプロフィールから、事業の基本情報、クチコミ、インサイトデータを読み取ります。</p>
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
@@ -200,7 +200,7 @@ export default async function Home() {
               </div>
               <p className="text-sm text-slate-400 max-w-sm">
                 SWOT分析 × Instagram生成AI<br />
-                店舗の集客を科学するプラットフォーム
+                事業の集客を科学するプラットフォーム
               </p>
             </div>
             <div>

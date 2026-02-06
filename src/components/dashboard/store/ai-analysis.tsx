@@ -61,7 +61,7 @@ export function AIAnalysis({
                     AI分析
                 </CardTitle>
                 <CardDescription>
-                    店舗情報とパフォーマンスデータを基に、AIが分析を行います。
+                    事業情報とパフォーマンスデータを基に、AIが分析を行います。
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">

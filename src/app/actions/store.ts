@@ -131,3 +131,58 @@ export async function createStore(data: Omit<Store, 'id' | 'created_at' | 'user_
 
     return { success: true, store: createdStore as Store }
 }
+
+export async function createStoreSelfService(data: Omit<Store, 'id' | 'created_at' | 'user_id'>) {
+    const supabase = await getSupabase()
+
+    // Debug: Check session explicitly
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    if (sessionError) {
+        console.error('CreateStore: Session Error:', sessionError)
+    }
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+    if (userError || !user) {
+        console.error('CreateStore: Unauthorized:', userError, 'Session:', session ? 'Exists' : 'Missing')
+        return { success: false, error: 'Unauthorized: ' + (userError?.message || 'No user') }
+    }
+
+    // 1. Create the store
+    // Use user.id as user_id field if the schema expects it (based on types/store.ts user_id exists)
+    const newStore = {
+        ...data,
+        user_id: user.id
+    }
+
+    const { data: createdStore, error: createError } = await supabase
+        .from('stores')
+        .insert(newStore)
+        .select()
+        .single()
+
+    if (createError || !createdStore) {
+        console.error('Failed to create store:', createError)
+        return { success: false, error: 'Failed to create business' }
+    }
+
+    // 2. Assign the user as STORE_ADMIN
+    const { error: assignError } = await supabase
+        .from('store_assignments')
+        .insert({
+            user_id: user.id,
+            store_id: createdStore.id,
+            role: 'STORE_ADMIN'
+        })
+
+    if (assignError) {
+        console.error('Failed to assign admin role:', assignError)
+        // Optional: Delete the orphaned store if assignment fails? 
+        // For now, let's keep it but return error, user might need support or retry.
+        // Or we can try to delete it to keep atomic-ish behavior.
+        await supabase.from('stores').delete().eq('id', createdStore.id)
+        return { success: false, error: 'Failed to assign permissions' }
+    }
+
+    return { success: true, store: createdStore as Store }
+}

@@ -133,7 +133,7 @@ export function Integrations({
                         </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">
-                        この店舗の集客に使用しているメインのキャンペーンを選択してください。
+                        この事業の集客に使用しているメインのキャンペーンを選択してください。
                     </p>
                 </div>
 

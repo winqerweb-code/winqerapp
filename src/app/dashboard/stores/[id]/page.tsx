@@ -187,7 +187,7 @@ export default function StorePage() {
                 setStore(updatedStore.store || null)
                 toast({
                     title: "保存完了",
-                    description: "店舗情報を更新しました。",
+                    description: "事業情報を更新しました。",
                 })
             } else {
                 throw new Error(updatedStore.error)
@@ -222,7 +222,7 @@ export default function StorePage() {
                     {isAdmin && (
                         <TabsTrigger value="settings" className="flex items-center gap-2">
                             <Settings className="h-4 w-4" />
-                            店舗設定
+                            事業設定
                         </TabsTrigger>
                     )}
                 </TabsList>

@@ -40,10 +40,6 @@ import { checkAdminStatusAction } from "@/app/actions/provider-actions"
 export default function StoresPage() {
     const router = useRouter()
     const { stores, setStores, setSelectedStore } = useStore()
-    const [open, setOpen] = useState(false)
-    const [newStoreName, setNewStoreName] = useState("")
-    const [newStoreAddress, setNewStoreAddress] = useState("")
-    const [newStorePhone, setNewStorePhone] = useState("")
     const [isAdmin, setIsAdmin] = useState(false)
     const [initializing, setInitializing] = useState(true)
     const { toast } = useToast()
@@ -82,81 +78,48 @@ export default function StoresPage() {
         init()
     }, [setStores, router])
 
-    const handleAddStore = async () => {
-        // ... (existing logic)
+    if (initializing) {
+        return (
+            <div className="flex h-[200px] items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        )
+    }
+
+    if (stores.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
+                <Button size="lg" asChild>
+                    <Link href="/dashboard/stores/new">
+                        <Plus className="mr-2 h-4 w-4" />
+                        事業を登録する
+                    </Link>
+                </Button>
+            </div>
+        )
     }
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight">店舗ハブ (Store Hub)</h2>
+                    <h2 className="text-3xl font-bold tracking-tight">事業ハブ (Business Hub)</h2>
                     <p className="text-muted-foreground">
-                        各店舗のマーケティングデータ（Meta, GA4, GBP）を一元管理します。
+                        各事業のマーケティングデータ（Meta, GA4, GBP）を一元管理します。
                     </p>
                 </div>
-                {isAdmin && (
-                    <Dialog open={open} onOpenChange={setOpen}>
-                        <DialogTrigger asChild>
-                            <Button>
-                                <Plus className="mr-2 h-4 w-4" />
-                                店舗を追加
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            {/* ... dialog content ... */}
-                            <DialogHeader>
-                                <DialogTitle>新しい店舗を追加</DialogTitle>
-                                <DialogDescription>
-                                    店舗の基本情報を入力してください。
-                                </DialogDescription>
-                            </DialogHeader>
-                            <div className="grid gap-4 py-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="store-name">店舗名</Label>
-                                    <Input
-                                        id="store-name"
-                                        placeholder="例: WINQER 池袋店"
-                                        value={newStoreName}
-                                        onChange={(e) => setNewStoreName(e.target.value)}
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="store-address">住所</Label>
-                                    <Input
-                                        id="store-address"
-                                        placeholder="例: 東京都豊島区南池袋1-1-1"
-                                        value={newStoreAddress}
-                                        onChange={(e) => setNewStoreAddress(e.target.value)}
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="store-phone">電話番号</Label>
-                                    <Input
-                                        id="store-phone"
-                                        placeholder="例: 03-1111-2222"
-                                        value={newStorePhone}
-                                        onChange={(e) => setNewStorePhone(e.target.value)}
-                                    />
-                                </div>
-                            </div>
-                            <div className="flex justify-end gap-2">
-                                <Button variant="outline" onClick={() => setOpen(false)}>
-                                    キャンセル
-                                </Button>
-                                <Button onClick={handleAddStore}>
-                                    追加
-                                </Button>
-                            </div>
-                        </DialogContent>
-                    </Dialog>
-                )}
+                <Button asChild>
+                    <Link href="/dashboard/stores/new">
+                        <Plus className="mr-2 h-4 w-4" />
+                        事業を追加
+                    </Link>
+                </Button>
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">登録店舗数</CardTitle>
+                        <CardTitle className="text-sm font-medium">登録事業数</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{stores.length}</div>
@@ -186,17 +149,17 @@ export default function StoresPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>店舗一覧</CardTitle>
+                    <CardTitle>事業一覧</CardTitle>
                     <CardDescription>
-                        管理中の店舗と連携ステータス
+                        管理中の事業と連携ステータス
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>店舗名</TableHead>
-                                <TableHead>住所 / 電話番号</TableHead>
+                                <TableHead>事業名</TableHead>
+                                <TableHead>業種 / 電話番号</TableHead>
                                 <TableHead>Meta連携</TableHead>
                                 <TableHead>Google連携</TableHead>
                                 <TableHead className="text-right">アクション</TableHead>
@@ -213,9 +176,9 @@ export default function StoresPage() {
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex flex-col text-sm">
-                                            <span>{store.address}</span>
+                                            <span>{store.industry || '-'}</span>
                                             <span className="text-muted-foreground flex items-center gap-1">
-                                                <Phone className="h-3 w-3" /> {store.phone}
+                                                <Phone className="h-3 w-3" /> {store.phone || '-'}
                                             </span>
                                         </div>
                                     </TableCell>

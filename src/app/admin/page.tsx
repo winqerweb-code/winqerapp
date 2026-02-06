@@ -121,7 +121,7 @@ function UserAssignmentManager({ storeId, storeName }: UserAssignmentManagerProp
         <Card className="mt-4">
             <CardHeader>
                 <CardTitle>ユーザー管理 ({storeName})</CardTitle>
-                <CardDescription>この店舗にアクセスできるユーザーを管理します。</CardDescription>
+                <CardDescription>この事業にアクセスできるユーザーを管理します。</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="flex space-x-2 mb-4">
@@ -141,7 +141,7 @@ function UserAssignmentManager({ storeId, storeName }: UserAssignmentManagerProp
                 ) : (
                     <ul className="space-y-2">
                         {assignments.length === 0 ? (
-                            <p className="text-gray-500">この店舗にはまだユーザーが割り当てられていません。</p>
+                            <p className="text-gray-500">この事業にはまだユーザーが割り当てられていません。</p>
                         ) : (
                             assignments.map((assignment) => (
                                 <li key={assignment.user_id} className="flex justify-between items-center p-2 border rounded-md">
@@ -436,7 +436,7 @@ function ProviderAdminsManager() {
             toast({ title: "入力エラー", description: "メールアドレスを入力してください", variant: "destructive" });
             return;
         }
-        if (!confirm("本当にこのユーザーに管理者権限を付与しますか？\n(全ての店舗へのアクセスが可能になります)")) return;
+        if (!confirm("本当にこのユーザーに管理者権限を付与しますか？\n(全ての事業へのアクセスが可能になります)")) return;
 
         setIsLoading(true);
         const res = await assignProviderAdminAction(emailToAssign);
@@ -470,7 +470,7 @@ function ProviderAdminsManager() {
                 <CardDescription>
                     システム全体の管理権限を持つユーザーを管理します。
                     <br />
-                    <span className="text-red-500 font-bold">注意: ここに追加されたユーザーは全ての店舗データにアクセスできます。</span>
+                    <span className="text-red-500 font-bold">注意: ここに追加されたユーザーは全ての事業データにアクセスできます。</span>
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -702,7 +702,7 @@ export default function AdminDashboard() {
                 setNewStoreName("")
                 setNewStoreIndustry("")
                 setIsCreateDialogOpen(false)
-                toast({ title: "店舗を作成しました" })
+                toast({ title: "事業を作成しました" })
             } else {
                 toast({ title: "エラー", description: res.error, variant: "destructive" })
             }
@@ -718,7 +718,7 @@ export default function AdminDashboard() {
         const res = await deleteStoreAction(id)
         if (res.success) {
             setStores(stores.filter(s => s.id !== id))
-            toast({ title: "店舗を削除しました" })
+            toast({ title: "事業を削除しました" })
         } else {
             toast({ title: "エラー", description: res.error, variant: "destructive" })
         }
@@ -840,7 +840,7 @@ export default function AdminDashboard() {
                         <DialogTrigger asChild>
                             <Button>
                                 <Plus className="mr-2 h-4 w-4" />
-                                店舗を追加
+                                事業を追加
                             </Button>
                         </DialogTrigger>
                         <DialogContent>
@@ -852,7 +852,7 @@ export default function AdminDashboard() {
                             </DialogHeader>
                             <div className="grid gap-4 py-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="name">店舗名</Label>
+                                    <Label htmlFor="name">事業名</Label>
                                     <Input
                                         id="name"
                                         placeholder="例: Winqer Salon Imj"
@@ -900,10 +900,10 @@ export default function AdminDashboard() {
                             <div className="grid grid-cols-12 gap-6 pt-4">
                                 {/* Store List */}
                                 <div className="col-span-4 space-y-4">
-                                    <h2 className="text-xl font-semibold">店舗一覧</h2>
+                                    <h2 className="text-xl font-semibold">事業一覧</h2>
                                     {stores.length === 0 && (
                                         <div className="p-4 border border-red-200 bg-red-50 rounded-md text-sm text-red-800">
-                                            <p className="font-bold">店舗が見つかりません</p>
+                                            <p className="font-bold">事業が見つかりません</p>
                                             <p>権限が不足している可能性があります。</p>
                                             <div className="mt-2 text-xs text-gray-600">
                                                 <p>現在のユーザー: {debugInfo.email || "不明"}</p>
@@ -952,7 +952,7 @@ export default function AdminDashboard() {
                                                 <Card>
                                                     <CardHeader>
                                                         <CardTitle>APIキー & シークレット</CardTitle>
-                                                        <CardDescription>この店舗のシークレットを管理します。</CardDescription>
+                                                        <CardDescription>この事業のシークレットを管理します。</CardDescription>
                                                     </CardHeader>
                                                     <CardContent className="space-y-6">
                                                         {/* AI Keys */}
@@ -1144,13 +1144,13 @@ export default function AdminDashboard() {
                                             <TabsContent value="users" className="mt-4">
                                                 <UserAssignmentManager
                                                     storeId={selectedStoreId}
-                                                    storeName={selectedStore?.name || "選択された店舗"}
+                                                    storeName={selectedStore?.name || "選択された事業"}
                                                 />
                                             </TabsContent>
                                         </Tabs>
                                     ) : (
                                         <div className="flex items-center justify-center h-64 text-muted-foreground border-2 border-dashed rounded-lg">
-                                            管理する店舗を選択してください
+                                            管理する事業を選択してください
                                         </div>
                                     )}
                                 </div>

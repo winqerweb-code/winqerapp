@@ -110,7 +110,7 @@ export default function StoreDashboardPage() {
                     // Set a dummy store compatible with our Mock Data in lib/mock-data.ts
                     currentStore = {
                         id: 'demo-store',
-                        name: 'デモ店舗 (Test Mode)',
+                        name: 'デモ事業 (Test Mode)',
                         created_at: new Date().toISOString(),
                         user_id: 'demo-user',
                         // triggers Meta Mock Logic in getStoreChartData (if campaign matches cam_111)
@@ -184,7 +184,7 @@ export default function StoreDashboardPage() {
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight">{store.name} ダッシュボード</h2>
                     <p className="text-muted-foreground">
-                        店舗の広告パフォーマンス分析ダッシュボード
+                        事業の広告パフォーマンス分析ダッシュボード
                     </p>
                 </div>
                 <div className="flex items-center gap-2">

@@ -17,7 +17,7 @@ const sidebarItems = [
         icon: LayoutDashboard,
     },
     {
-        title: "店舗ハブ",
+        title: "事業ハブ",
         href: "/dashboard/stores",
         icon: Store,
     },
