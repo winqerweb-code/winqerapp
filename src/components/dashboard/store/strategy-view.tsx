@@ -13,52 +13,23 @@ import { saveStrategy, getStrategy } from "@/app/actions/strategy"
 import { useToast } from "@/components/ui/use-toast"
 
 // Define types matching the API input
+// Define types matching the API input (Simplified 6 Questions)
 interface StrategyInput {
-    goal: {
-        main_objective: string;
-        monthly_new_customers: string;
-    };
-    product: {
-        menu_name: string;
-        price_first: string;
-        price_normal: string;
-        format: string;
-        usage_type: string;
-    };
-    constraints: {
-        max_capacity: string;
-        ng_conditions: string[];
-        unwanted_customer_types: string;
-    };
-    customer_voice: {
-        frequent_questions: string;
-        pre_visit_anxieties: string;
-        deciding_factors: string;
-        refusal_reasons: string;
-    };
-    comparison: {
-        competitors: string[];
-        differentiation_points: string;
-    };
-    assets: {
-        available_assets: string;
-        feasible_channels: string[];
-        writing_skill: string;
-    };
-    brand: {
-        ng_expressions: string;
-        desired_image: string;
-    };
+    product_name: string;      // Q1. Product
+    price_menu: string;        // Q2. Price & Menu
+    strengths: string;         // Q3. Strengths
+    weaknesses: string;        // Q4. Weaknesses
+    target_persona: string;    // Q5. Target
+    goal: string;              // Q6. Goal
 }
 
 const INITIAL_STATE: StrategyInput = {
-    goal: { main_objective: "", monthly_new_customers: "" },
-    product: { menu_name: "", price_first: "", price_normal: "", format: "", usage_type: "" },
-    constraints: { max_capacity: "", ng_conditions: [], unwanted_customer_types: "" },
-    customer_voice: { frequent_questions: "", pre_visit_anxieties: "", deciding_factors: "", refusal_reasons: "" },
-    comparison: { competitors: [], differentiation_points: "" },
-    assets: { available_assets: "", feasible_channels: [], writing_skill: "" },
-    brand: { ng_expressions: "", desired_image: "" },
+    product_name: "",
+    price_menu: "",
+    strengths: "",
+    weaknesses: "",
+    target_persona: "",
+    goal: ""
 }
 
 interface StrategyViewProps {
@@ -87,17 +58,17 @@ export function StrategyView({ isAdmin = false }: StrategyViewProps) {
             try {
                 const { success, strategy } = await getStrategy(selectedStore.id)
                 if (success && strategy) {
-                    setFormData(strategy.input_data)
+                    // Check if old data format, if so, migrate or reset
+                    // For simplicity, if keys don't match, we might need to reset or map
+                    // Here we blindly trust it for now but in prod we might want a migration
+                    if (strategy.input_data && 'product_name' in strategy.input_data) {
+                        setFormData(strategy.input_data)
+                    } else {
+                        // Inherit old data if possible or start fresh
+                        setFormData(INITIAL_STATE)
+                    }
                     setResult(strategy.output_data)
-                    // Optional toast - might be annoying if switching tabs frequently
-                    /*
-                    toast({
-                        title: "戦略を読み込みました",
-                        description: "保存された戦略データを表示します。",
-                    })
-                    */
                 } else {
-                    // No strategy found, reset form but keep store context
                     setFormData(INITIAL_STATE)
                     setResult(null)
                 }
@@ -108,32 +79,11 @@ export function StrategyView({ isAdmin = false }: StrategyViewProps) {
         loadStrategy()
     }, [selectedStore, toast])
 
-    const handleInputChange = (section: keyof StrategyInput, field: string, value: any) => {
+    const handleInputChange = (field: keyof StrategyInput, value: string) => {
         setFormData(prev => ({
             ...prev,
-            [section]: {
-                ...prev[section],
-                [field]: value
-            }
+            [field]: value
         }))
-    }
-
-    const handleArrayToggle = (section: keyof StrategyInput, field: string, value: string) => {
-        setFormData(prev => {
-            // @ts-ignore
-            const currentArray = prev[section][field] as string[]
-            const newArray = currentArray.includes(value)
-                ? currentArray.filter(item => item !== value)
-                : [...currentArray, value]
-
-            return {
-                ...prev,
-                [section]: {
-                    ...prev[section],
-                    [field]: newArray
-                }
-            }
-        })
     }
 
     const generateStrategy = async () => {
@@ -141,6 +91,16 @@ export function StrategyView({ isAdmin = false }: StrategyViewProps) {
             toast({
                 title: "店舗が選択されていません",
                 description: "戦略を生成するには、まず店舗を選択してください。",
+                variant: "destructive",
+            })
+            return
+        }
+
+        // Simple validation
+        if (!formData.product_name || !formData.target_persona) {
+            toast({
+                title: "入力が不足しています",
+                description: "少なくとも「商品」と「ターゲット」は入力してください。",
                 variant: "destructive",
             })
             return
@@ -229,22 +189,13 @@ export function StrategyView({ isAdmin = false }: StrategyViewProps) {
         })
     }
 
-    const handleArrayItemChange = (section: string, index: number, field: string, value: any) => {
-        setResult((prev: any) => {
-            const newState = JSON.parse(JSON.stringify(prev))
-            if (newState[section] && newState[section][index]) {
-                newState[section][index][field] = value
-            }
-            return newState
-        })
-    }
-
     return (
         <div className="container mx-auto py-4 max-w-4xl space-y-8">
             <div className="space-y-2">
-                <h2 className="text-xl font-bold">広告戦略AI設定</h2>
+                <h2 className="text-xl font-bold">広告戦略AI設定（厳選6問）</h2>
                 <p className="text-muted-foreground text-sm">
-                    あなたのビジネス情報をもとに、プロレベルの広告戦略を自動生成します。
+                    たった6つの質問に答えるだけで、プロレベルの広告戦略を自動生成します。<br />
+                    <span className="text-xs text-amber-600">※難しく考えず、普段お客様に話しているような言葉で入力してください。</span>
                 </p>
                 {!selectedStore && (
                     <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md text-sm">
@@ -256,304 +207,86 @@ export function StrategyView({ isAdmin = false }: StrategyViewProps) {
             {/* Form Section */}
             <div className="grid gap-6">
 
-                {/* 1. Goal */}
+                {/* 1. Basic Info */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>1. ゴール確認（超シンプル）</CardTitle>
+                        <CardTitle className="flex items-center gap-2">
+                            <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
+                            あなたの商品・サービス（基本）
+                        </CardTitle>
                     </CardHeader>
                     <CardContent className="grid gap-4">
                         <div className="grid gap-2">
-                            <Label>Q1. 今回の集客・販売で一番増やしたいのはどれですか？（1つ）</Label>
-                            <Select value={formData.goal.main_objective} onValueChange={(val) => handleInputChange('goal', 'main_objective', val)}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="選択してください" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="来店・予約・購入数">来店・予約・購入数</SelectItem>
-                                    <SelectItem value="問い合わせ">問い合わせ</SelectItem>
-                                    <SelectItem value="とりあえず認知（今回は不要）">とりあえず認知（今回は不要）</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label>Q2. 月に新規で、何人くらい増えたら理想ですか？</Label>
-                            <Select value={formData.goal.monthly_new_customers} onValueChange={(val) => handleInputChange('goal', 'monthly_new_customers', val)}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="選択してください" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="5人くらい">5人くらい</SelectItem>
-                                    <SelectItem value="10人くらい">10人くらい</SelectItem>
-                                    <SelectItem value="15人くらい">15人くらい</SelectItem>
-                                    <SelectItem value="20人くらい">20人くらい</SelectItem>
-                                    <SelectItem value="よく分からない（お任せ）">よく分からない（お任せ）</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* 2. Product */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>2. 商品・サービス・メニュー（事実だけ）</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid gap-4">
-                        <div className="grid gap-2">
-                            <Label>Q3. 今回、特に売り出したい商品・サービスは何ですか？</Label>
+                            <Label>Q1. 何を売っていますか？ <span className="text-red-500">*</span></Label>
                             <Input
-                                placeholder="例：プレミアムフェイシャル、季節限定ランチ、春の入会キャンペーン"
-                                value={formData.product.menu_name}
-                                onChange={(e) => handleInputChange('product', 'menu_name', e.target.value)}
+                                placeholder="例：腰痛専門の整体、手作りシフォンケーキ、オンライン英会話"
+                                value={formData.product_name}
+                                onChange={(e) => handleInputChange('product_name', e.target.value)}
                             />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label>Q4. 初回価格</Label>
-                                <Input
-                                    placeholder="例：5000"
-                                    value={formData.product.price_first}
-                                    onChange={(e) => handleInputChange('product', 'price_first', e.target.value)}
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label>通常価格</Label>
-                                <Input
-                                    placeholder="例：10000"
-                                    value={formData.product.price_normal}
-                                    onChange={(e) => handleInputChange('product', 'price_normal', e.target.value)}
-                                />
-                            </div>
-                        </div>
                         <div className="grid gap-2">
-                            <Label>Q5. 提供形式</Label>
-                            <Select value={formData.product.format} onValueChange={(val) => handleInputChange('product', 'format', val)}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="選択してください" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="店舗・対面">店舗・対面</SelectItem>
-                                    <SelectItem value="オンライン">オンライン</SelectItem>
-                                    <SelectItem value="物販・EC">物販・EC</SelectItem>
-                                    <SelectItem value="デリバリー・テイクアウト">デリバリー・テイクアウト</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label>Q6. 基本的な利用形態</Label>
-                            <Select value={formData.product.usage_type} onValueChange={(val) => handleInputChange('product', 'usage_type', val)}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="選択してください" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="単発利用が多い">単発利用が多い</SelectItem>
-                                    <SelectItem value="リピート・継続型">リピート・継続型</SelectItem>
-                                    <SelectItem value="どちらも同じくらい">どちらも同じくらい</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* 3. Constraints */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>3. キャパ・制約条件（かなり重要）</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid gap-4">
-                        <div className="grid gap-2">
-                            <Label>Q7. 月に対応できる新規顧客（または販売数）の上限は？</Label>
+                            <Label>Q2. 価格とメニュー</Label>
                             <Input
-                                placeholder="例：10名、50個、制限なし"
-                                value={formData.constraints.max_capacity}
-                                onChange={(e) => handleInputChange('constraints', 'max_capacity', e.target.value)}
+                                placeholder="例：60分 8,000円、ホール 2,500円、月額 980円"
+                                value={formData.price_menu}
+                                onChange={(e) => handleInputChange('price_menu', e.target.value)}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* 2. SWOT Seeds */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
+                            あなたの「武器」と「弱点」（SWOTの素）
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-4">
+                        <div className="grid gap-2">
+                            <Label>Q3. こだわり（強み）: 他のお店と何が違いますか？</Label>
+                            <Textarea
+                                placeholder="例：ボキボキしない施術、添加物を一切使わない、夜22時まで営業"
+                                value={formData.strengths}
+                                onChange={(e) => handleInputChange('strengths', e.target.value)}
                             />
                         </div>
                         <div className="grid gap-2">
-                            <Label>Q8. サービスの提供において、お断りせざるを得ない条件はありますか？（複数可）</Label>
-                            <div className="flex flex-wrap gap-2">
-                                {['未成年', '男性', '子供連れ', 'ペット同伴', '泥酔状態'].map((item) => (
-                                    <Button
-                                        key={item}
-                                        variant={formData.constraints.ng_conditions.includes(item) ? "default" : "outline"}
-                                        size="sm"
-                                        onClick={() => handleArrayToggle('constraints', 'ng_conditions', item)}
-                                    >
-                                        {item}
-                                    </Button>
-                                ))}
-                            </div>
+                            <Label>Q4. 正直な悩み（弱点）: 大手や有名店に負けているところは？</Label>
+                            <Textarea
+                                placeholder="例：マンションの一室で怪しい、賞味期限が短い、スタッフが私一人しかいない"
+                                value={formData.weaknesses}
+                                onChange={(e) => handleInputChange('weaknesses', e.target.value)}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* 3. Target & Goal */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span>
+                            ターゲットとゴール
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-4">
+                        <div className="grid gap-2">
+                            <Label>Q5. 誰を助けたい？（たった一人のお客様） <span className="text-red-500">*</span></Label>
+                            <Textarea
+                                placeholder="その人はどんな生活をしていて、何に悩んでいますか？&#13;&#10;例：デスクワークで腰が限界の30代SE、子供に安全なおやつを食べさせたいママ"
+                                value={formData.target_persona}
+                                onChange={(e) => handleInputChange('target_persona', e.target.value)}
+                            />
                         </div>
                         <div className="grid gap-2">
-                            <Label>Q9. 正直、あまり対応したくないお客様のタイプはありますか？</Label>
+                            <Label>Q6. どうなってほしい？（ゴール）</Label>
                             <Input
-                                placeholder="例：安さ目的、無断キャンセルが多い など"
-                                value={formData.constraints.unwanted_customer_types}
-                                onChange={(e) => handleInputChange('constraints', 'unwanted_customer_types', e.target.value)}
+                                placeholder="例：まずはLINE登録、プロフィールを見てほしい、予約してほしい"
+                                value={formData.goal}
+                                onChange={(e) => handleInputChange('goal', e.target.value)}
                             />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* 4. Customer Voice */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>4. お客様のリアルな声（広告の核）</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid gap-4">
-                        <div className="grid gap-2">
-                            <Label>Q10. 初めてのお客様からよくある質問は？（最大3つ）</Label>
-                            <Textarea
-                                placeholder="・痛くないですか？&#13;&#10;・初心者でも大丈夫ですか？&#13;&#10;・日持ちはしますか？"
-                                value={formData.customer_voice.frequent_questions}
-                                onChange={(e) => handleInputChange('customer_voice', 'frequent_questions', e.target.value)}
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label>Q11. 購入・利用前にお客様が不安に感じていそうなことは？</Label>
-                            <Textarea
-                                placeholder="例：自分に合うか不安／高そう／効果があるか分からない"
-                                value={formData.customer_voice.pre_visit_anxieties}
-                                onChange={(e) => handleInputChange('customer_voice', 'pre_visit_anxieties', e.target.value)}
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label>Q12. 実際に選んでくれた決め手になった理由は何ですか？</Label>
-                            <Textarea
-                                placeholder="例：家から近い、口コミが良い"
-                                value={formData.customer_voice.deciding_factors}
-                                onChange={(e) => handleInputChange('customer_voice', 'deciding_factors', e.target.value)}
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label>Q13. 購入・利用に至らなかった主な理由は何ですか？</Label>
-                            <Select value={formData.customer_voice.refusal_reasons} onValueChange={(val) => handleInputChange('customer_voice', 'refusal_reasons', val)}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="選択してください" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="価格">価格</SelectItem>
-                                    <SelectItem value="距離">距離</SelectItem>
-                                    <SelectItem value="時間">時間</SelectItem>
-                                    <SelectItem value="タイミング">タイミング</SelectItem>
-                                    <SelectItem value="その他">その他</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* 5. Comparison */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>5. 比較対象（ポジション決定用）</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid gap-4">
-                        <div className="grid gap-2">
-                            <Label>Q14. 比較されやすい相手はどれですか？（複数可）</Label>
-                            <div className="flex flex-wrap gap-2">
-                                {['大手チェーン', '格安店', 'ネット通販', '代替サービス'].map((item) => (
-                                    <Button
-                                        key={item}
-                                        variant={formData.comparison.competitors.includes(item) ? "default" : "outline"}
-                                        size="sm"
-                                        onClick={() => handleArrayToggle('comparison', 'competitors', item)}
-                                    >
-                                        {item}
-                                    </Button>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label>Q15. それらと比べて「ここは違う」と思う点は何ですか？</Label>
-                            <Textarea
-                                placeholder="うまく書けなくてOK"
-                                value={formData.comparison.differentiation_points}
-                                onChange={(e) => handleInputChange('comparison', 'differentiation_points', e.target.value)}
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* 6. Assets */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>6. 素材・発信できる範囲（現実ベース）</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid gap-4">
-                        <div className="grid gap-2">
-                            <Label>Q16. 広告・販促に使えそうな素材・強みはありますか？</Label>
-                            <Select value={formData.assets.available_assets} onValueChange={(val) => handleInputChange('assets', 'available_assets', val)}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="選択してください" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="お客様の声">お客様の声</SelectItem>
-                                    <SelectItem value="商品・サービスの写真/動画">商品・サービスの写真/動画</SelectItem>
-                                    <SelectItem value="実績データ">実績データ</SelectItem>
-                                    <SelectItem value="顔出しOK">スタッフの顔写真・顔出しOK</SelectItem>
-                                    <SelectItem value="特にない">特にない</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label>Q17. 無理なくできそうな発信はどれですか？（複数可）</Label>
-                            <div className="flex flex-wrap gap-2">
-                                {['Instagram投稿（月1〜4回）', 'ホームページの固定ページ', 'Googleマップ（口コミ中心）', '正直、ほぼ何もできない'].map((item) => (
-                                    <Button
-                                        key={item}
-                                        variant={formData.assets.feasible_channels.includes(item) ? "default" : "outline"}
-                                        size="sm"
-                                        onClick={() => handleArrayToggle('assets', 'feasible_channels', item)}
-                                    >
-                                        {item}
-                                    </Button>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label>Q18. 文章を書くのはどれくらい得意ですか？</Label>
-                            <Select value={formData.assets.writing_skill} onValueChange={(val) => handleInputChange('assets', 'writing_skill', val)}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="選択してください" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="苦ではない">苦ではない</SelectItem>
-                                    <SelectItem value="少し苦手">少し苦手</SelectItem>
-                                    <SelectItem value="かなり苦手">かなり苦手</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* 7. Brand */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>7. NG表現・ブランド方針（暴走防止）</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid gap-4">
-                        <div className="grid gap-2">
-                            <Label>Q19. 絶対にやりたくない広告表現はありますか？</Label>
-                            <Input
-                                placeholder="例：安売り／煽り／派手 など"
-                                value={formData.brand.ng_expressions}
-                                onChange={(e) => handleInputChange('brand', 'ng_expressions', e.target.value)}
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label>Q20. 将来的に、どんな存在として選ばれたいですか？</Label>
-                            <Select value={formData.brand.desired_image} onValueChange={(val) => handleInputChange('brand', 'desired_image', val)}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="選択してください" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="地域で信頼される">地域で信頼される</SelectItem>
-                                    <SelectItem value="専門性が高い">専門性が高い</SelectItem>
-                                    <SelectItem value="気軽に通える">気軽に通える</SelectItem>
-                                    <SelectItem value="その他">その他</SelectItem>
-                                </SelectContent>
-                            </Select>
                         </div>
                     </CardContent>
                 </Card>
@@ -567,7 +300,7 @@ export function StrategyView({ isAdmin = false }: StrategyViewProps) {
                     {loading ? (
                         <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            戦略を生成中...
+                            戦略を生成中... (約10~20秒)
                         </>
                     ) : (!isAdmin && result) ? (
                         <>
@@ -577,7 +310,7 @@ export function StrategyView({ isAdmin = false }: StrategyViewProps) {
                     ) : (
                         <>
                             <Sparkles className="mr-2 h-4 w-4" />
-                            戦略を生成する
+                            この内容でAIに戦略を作らせる
                         </>
                     )}
                 </Button>

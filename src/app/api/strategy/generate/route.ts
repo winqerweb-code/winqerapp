@@ -4,42 +4,13 @@ import { createClient } from '@supabase/supabase-js';
 
 // Define input interfaces
 interface StrategyInput {
-  goal: {
-    main_objective: string;
-    monthly_new_customers: string;
-  };
-  product: {
-    menu_name: string;
-    price_first: string;
-    price_normal: string;
-    format: string;
-    usage_type: string;
-  };
-  constraints: {
-    max_capacity: string;
-    ng_conditions: string[];
-    unwanted_customer_types: string;
-  };
-  customer_voice: {
-    frequent_questions: string;
-    pre_visit_anxieties: string;
-    deciding_factors: string;
-    refusal_reasons: string;
-  };
-  comparison: {
-    competitors: string[];
-    differentiation_points: string;
-  };
-  assets: {
-    available_assets: string;
-    feasible_channels: string[];
-    writing_skill: string;
-  };
-  brand: {
-    ng_expressions: string;
-    desired_image: string;
-  };
-  apiKey?: string; // Optional: pass API key from client if not in env
+  product_name: string;      // Q1. 何を売っていますか？
+  price_menu: string;        // Q2. 価格とメニュー
+  strengths: string;         // Q3. こだわり（強み）
+  weaknesses: string;        // Q4. 正直な悩み（弱点）
+  target_persona: string;    // Q5. 誰を助けたい？
+  goal: string;              // Q6. どうなってほしい？
+  apiKey?: string;
 }
 
 export async function POST(req: Request) {
@@ -191,6 +162,10 @@ export async function POST(req: Request) {
       あなたは、**「小規模事業者（一人オーナー〜従業員5名以下）専門の凄腕マーケティングコンサルタント」**です。
       クライアントは、日々の業務に追われ、マーケティングに割く時間も予算も人員もない、多忙なオーナーです。
       
+      **【前提条件（重要）】**
+      - クライアントには「予算」も「時間」も「マーケティングスキル」もありません。
+      - よって、「広告費を大量にかける」「毎日何時間もSNSを更新する」「高度な分析をする」といった提案は**すべて却下**されます。
+
       **【ターゲットの解像度】**
       クライアントの状態：
       - 「集客したいが、SNSを更新する時間がない」
@@ -223,8 +198,9 @@ export async function POST(req: Request) {
       5. **Instagram投稿案**: 
          「映え」は不要。「文字入れ画像」でOK。
          オーナーがスマホで5分で作れる内容であること。文章は「です・ます」調よりも、親近感のある「語りかけ」口調で。
+         ※もしオーナーが「SNSを見る専」であれば、見る専の人にも届くようなハッシュタグや発見タブを意識すること。
       6. **空欄の補完**: 
-         情報不足時は、その業種の「あるある」から推測して埋めること。絶対に「情報がありません」と出力しないこと。
+         入力情報が少ない場合、提供された「業種」や「悩み」からプロの直感で**「この業種なら普通こうだろう」**という仮説を立てて埋めてください。「情報がありません」は禁止です。
 
       **【JSON出力フォーマット（厳守）】**
       必ず以下のJSON形式で出力してください。
@@ -257,8 +233,8 @@ export async function POST(req: Request) {
         ],
         "strategy_summary": {
           "target_cpa": "具体的な金額（例：3,000円）",
-          "estimated_budget": "具体的な金額（例：月3万円〜）",
-          "advice": "多忙なオーナーへの、優先順位をつけた具体的アクションプラン"
+          "estimated_budget": "具体的な金額（コスト重視で安く）",
+          "advice": "多忙なオーナーへの、優先順位をつけた具体的アクションプラン（今日やるべきこと）"
         },
         "funnel_design": {
           "steps": [
@@ -278,42 +254,23 @@ export async function POST(req: Request) {
     `;
 
     const userPrompt = `
+      クライアントは小規模事業者です。以下の限られたヒアリング情報から、最高の戦略を立案してください。
 
-# Hearing Information
-## 1. Goal
-- Main Objective: ${body.goal.main_objective}
-- Target Monthly New Customers: ${body.goal.monthly_new_customers}
+      # Hearing Information
+      ## 1. Product & Services (基本情報)
+      - What they sell: ${body.product_name}
+      - Price & Menu: ${body.price_menu}
 
-## 2. Product/Service
-- Menu Name: ${body.product.menu_name}
-- Price: First ${body.product.price_first} / Normal ${body.product.price_normal}
-- Format: ${body.product.format}
-- Usage Type: ${body.product.usage_type}
+      ## 2. SWOT Seeds (強み・弱み)
+      - Unique Selling Proposition (強み・こだわり): ${body.strengths}
+      - Weaknesses/Worries (正直な悩み): ${body.weaknesses}
 
-## 3. Constraints
-- Max Capacity: ${body.constraints.max_capacity}
-- NG Conditions: ${body.constraints.ng_conditions.join(', ')}
-- Unwanted Customer Types: ${body.constraints.unwanted_customer_types}
+      ## 3. Target Audience (たった一人のお客様)
+      - Who they want to help: ${body.target_persona}
 
-## 4. Customer Voice
-- FAQ: ${body.customer_voice.frequent_questions}
-- Anxieties: ${body.customer_voice.pre_visit_anxieties}
-- Deciding Factors: ${body.customer_voice.deciding_factors}
-- Refusal Reasons: ${body.customer_voice.refusal_reasons}
-
-## 5. Comparison
-- Competitors: ${body.comparison.competitors.join(', ')}
-- Differentiation: ${body.comparison.differentiation_points}
-
-## 6. Assets & Channels
-- Assets: ${body.assets.available_assets}
-- Feasible Channels: ${body.assets.feasible_channels.join(', ')}
-- Writing Skill: ${body.assets.writing_skill}
-
-## 7. Brand Policy
-- NG Expressions: ${body.brand.ng_expressions}
-- Desired Image: ${body.brand.desired_image}
-`;
+      ## 4. Goal (目的)
+      - Desired Outcome: ${body.goal}
+    `;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o", // Upgraded to gpt-4o for better schema adherence and creativity
