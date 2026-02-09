@@ -189,6 +189,16 @@ export function StrategyView({ isAdmin = false }: StrategyViewProps) {
         })
     }
 
+    const handleArrayItemChange = (section: string, index: number, field: string, value: any) => {
+        setResult((prev: any) => {
+            const newState = JSON.parse(JSON.stringify(prev))
+            if (newState[section] && newState[section][index]) {
+                newState[section][index][field] = value
+            }
+            return newState
+        })
+    }
+
     return (
         <div className="container mx-auto py-4 max-w-4xl space-y-8">
             <div className="space-y-2">
