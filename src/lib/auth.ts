@@ -14,7 +14,7 @@ export const signInWithGoogle = async () => {
                 access_type: 'offline',
                 prompt: 'consent',
             },
-            scopes: 'https://www.googleapis.com/auth/business.manage https://www.googleapis.com/auth/analytics.readonly',
+            // scopes: 'https://www.googleapis.com/auth/business.manage https://www.googleapis.com/auth/analytics.readonly',
             redirectTo: `${window.location.origin}/auth/callback`,
         },
     })
