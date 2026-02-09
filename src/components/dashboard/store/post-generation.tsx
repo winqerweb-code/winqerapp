@@ -191,8 +191,23 @@ export function PostGeneration({ storeId, strategyData }: PostGenerationProps) {
     }
 
     // Context Summary
-    const persona = strategyData?.output_data?.persona?.demographics || strategyData?.input_data?.goal?.target_audience || "未設定"
-    const usp = strategyData?.input_data?.comparison?.differentiation_points || "未設定"
+    const persona = strategyData?.output_data?.persona?.demographics
+        || strategyData?.input_data?.target_persona // New simplified form
+        || strategyData?.input_data?.goal?.target_audience // Old form
+        || "未設定"
+
+    // Construct USP string (handle array or string)
+    let usp = "未設定"
+    if (strategyData?.output_data?.swot?.strengths) {
+        const val = strategyData.output_data.swot.strengths
+        usp = Array.isArray(val) ? val.slice(0, 3).join(", ") : val
+    } else if (strategyData?.input_data?.strengths) {
+        // New simplified form
+        usp = strategyData.input_data.strengths
+    } else if (strategyData?.input_data?.comparison?.differentiation_points) {
+        // Old form
+        usp = strategyData.input_data.comparison.differentiation_points
+    }
 
     return (
         <div className="grid gap-6 md:grid-cols-2">
