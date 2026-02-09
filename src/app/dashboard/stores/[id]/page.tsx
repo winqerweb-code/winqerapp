@@ -233,14 +233,7 @@ export default function StorePage() {
                         <Target className="h-4 w-4" />
                         戦略設定
                     </TabsTrigger>
-                    {(isAdmin || userRole === 'STORE_ADMIN') && (
-                        <TabsTrigger value="settings" className="flex items-center gap-2">
-                            <Settings className="h-4 w-4" />
-                            事業設定
-                        </TabsTrigger>
-                    )}
                 </TabsList>
-
                 {/* Tab 1: Post Generation */}
                 <TabsContent value="post-gen" className="space-y-4">
                     {storeId && (
@@ -254,56 +247,6 @@ export default function StorePage() {
                         <StrategyView isAdmin={isAdmin} />
                     </div>
                 </TabsContent>
-
-                {/* Tab 3: Settings (Original Layout) */}
-                {(isAdmin || userRole === 'STORE_ADMIN') && (
-                    <TabsContent value="settings" className="space-y-4">
-                        <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
-                            {/* Left Column: Settings */}
-                            <div className="col-span-1 lg:col-span-4 space-y-4">
-                                {store && (
-                                    <StoreSettings
-                                        store={store}
-                                        name={name}
-                                        setName={setName}
-                                        address={address}
-                                        setAddress={setAddress}
-                                        phone={phone}
-                                        setPhone={setPhone}
-                                        targetAudience={targetAudience}
-                                        setTargetAudience={setTargetAudience}
-                                        initialBudget={initialBudget}
-                                        setInitialBudget={setInitialBudget}
-                                        industry={industry}
-                                        setIndustry={setIndustry}
-                                        openaiApiKey={openaiApiKey}
-                                        setOpenaiApiKey={setOpenaiApiKey}
-                                        isSystemKeyAvailable={isSystemKeyAvailable}
-                                        onSave={handleSave}
-                                        loading={loading}
-                                    />
-                                )}
-                            </div>
-
-                            {/* Right Column: Integrations */}
-                            <div className="col-span-1 lg:col-span-3 space-y-4">
-                                <Integrations
-                                    metaCampaignId={metaCampaignId}
-                                    setMetaCampaignId={setMetaCampaignId}
-                                    campaigns={campaigns}
-                                    ga4PropertyId={ga4PropertyId}
-                                    setGa4PropertyId={setGa4PropertyId}
-                                    gbpLocationId={gbpLocationId}
-                                    setGbpLocationId={setGbpLocationId}
-                                    cvEventName={cvEventName}
-                                    setCvEventName={setCvEventName}
-                                    onSave={handleSave}
-                                    loading={loading}
-                                />
-                            </div>
-                        </div>
-                    </TabsContent>
-                )}
             </Tabs>
         </div>
     )

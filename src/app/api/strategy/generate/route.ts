@@ -206,10 +206,10 @@ export async function POST(req: Request) {
       必ず以下のJSON形式で出力してください。
       {
         "swot": {
-          "strengths": ["具体的な強み1", "具体的な強み2", "具体的な強み3"],
-          "weaknesses": ["具体的な弱み1", "具体的な弱み2", "具体的な弱み3"],
-          "opportunities": ["具体的な機会1", "具体的な機会2", "具体的な機会3"],
-          "threats": ["具体的な脅威1", "具体的な脅威2"]
+          "strengths": ["具体的な強み1", "具体的な強み2", "具体的な強み3", "具体的な強み4", "具体的な強み5"],
+          "weaknesses": ["具体的な弱み1", "具体的な弱み2", "具体的な弱み3", "具体的な弱み4", "具体的な弱み5"],
+          "opportunities": ["具体的な機会1", "具体的な機会2", "具体的な機会3", "具体的な機会4", "具体的な機会5"],
+          "threats": ["具体的な脅威1", "具体的な脅威2", "具体的な脅威3"]
         },
         "stp": {
           "segmentation": "具体的なセグメント",
@@ -225,7 +225,9 @@ export async function POST(req: Request) {
         "appeal_points": [
           { "title": "訴求ポイント1", "ad_copy_example": "そのまま使える広告コピー", "reasoning": "なぜこれが刺さるのかの泥臭い理由" },
           { "title": "訴求ポイント2", "ad_copy_example": "そのまま使える広告コピー", "reasoning": "なぜこれが刺さるのかの泥臭い理由" },
-          { "title": "訴求ポイント3", "ad_copy_example": "そのまま使える広告コピー", "reasoning": "なぜこれが刺さるのかの泥臭い理由" }
+          { "title": "訴求ポイント3", "ad_copy_example": "そのまま使える広告コピー", "reasoning": "なぜこれが刺さるのかの泥臭い理由" },
+          { "title": "訴求ポイント4", "ad_copy_example": "そのまま使える広告コピー", "reasoning": "なぜこれが刺さるのかの泥臭い理由" },
+          { "title": "訴求ポイント5", "ad_copy_example": "そのまま使える広告コピー", "reasoning": "なぜこれが刺さるのかの泥臭い理由" }
         ],
         "recommended_media": [
           { "name": "媒体名1", "reasoning": "なぜこれだけでいいのか、他が不要な理由（コスト・手間面から）" },
@@ -248,7 +250,8 @@ export async function POST(req: Request) {
           { "title": "投稿1のタイトル", "body": "そのまま投稿できる本文（絵文字あり）", "purpose": "投稿の狙い", "reasoning": "なぜこれが刺さるか" },
           { "title": "投稿2のタイトル", "body": "そのまま投稿できる本文（絵文字あり）", "purpose": "投稿の狙い", "reasoning": "なぜこれが刺さるか" },
           { "title": "投稿3のタイトル", "body": "そのまま投稿できる本文（絵文字あり）", "purpose": "投稿の狙い", "reasoning": "なぜこれが刺さるか" },
-          { "title": "投稿4のタイトル", "body": "そのまま投稿できる本文（絵文字あり）", "purpose": "投稿の狙い", "reasoning": "なぜこれが刺さるか" }
+          { "title": "投稿4のタイトル", "body": "そのまま投稿できる本文（絵文字あり）", "purpose": "投稿の狙い", "reasoning": "なぜこれが刺さるか" },
+          { "title": "投稿5のタイトル", "body": "そのまま投稿できる本文（絵文字あり）", "purpose": "投稿の狙い", "reasoning": "なぜこれが刺さるか" }
         ]
       }
     `;
