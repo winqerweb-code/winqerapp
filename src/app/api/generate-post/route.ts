@@ -112,6 +112,16 @@ export async function POST(req: NextRequest) {
         const openai = new OpenAI({ apiKey: effectiveApiKey })
 
         // 5. Construct Prompt (Professional Copywriter Persona)
+        // Helper to safely get array or string
+        const formatList = (val: any) => Array.isArray(val) ? val.join(", ") : (val || "未設定");
+
+        // Determine input data values (supporting both old and new formats for backward compatibility)
+        const targetAudience = outputData.persona?.demographics || inputData.target_persona || inputData.goal?.target_audience || "一般層";
+        const painPoints = outputData.persona?.pain_points || inputData.weaknesses || "未設定"; // Weaknesses might be business weaknesses, but often implies customer pain points in context or we can just use "未設定"
+        const usp = formatList(outputData.swot?.strengths) !== "未設定" ? formatList(outputData.swot?.strengths) : (inputData.strengths || inputData.comparison?.differentiation_points || "未設定");
+        const brandImage = inputData.goal || inputData.brand?.desired_image || "親しみやすい"; // Use Goal as a proxy for desired outcome/image
+        const ngExpressions = inputData.brand?.ng_expressions || "特になし"; // New format doesn't have NG, default to none
+
         const systemPrompt = `
 あなたは「売上に直結する言葉を紡ぐプロのInstagramコピーライター」です。
 提供された情報（店舗データ・戦略）を元に、ターゲットの心を動かし、予約や来店という「行動」を引き出すキャプションを作成してください。
@@ -120,11 +130,13 @@ export async function POST(req: NextRequest) {
 - 店名: ${store.name}
 - 業種: ${inputData.industry || store.industry || "未設定"}
 - 地域: ${store.address || "未設定"}
-- ターゲット層: ${outputData.persona?.demographics || inputData.goal?.target_audience || "一般層"}
-- ターゲットの悩み: ${outputData.persona?.pain_points || "未設定"}
-- ブランドの強み (USP): ${Array.isArray(outputData.swot?.strengths) ? outputData.swot.strengths.join(", ") : (outputData.swot?.strengths || inputData.comparison?.differentiation_points || "未設定")}
-- 目指すブランドイメージ: ${inputData.brand?.desired_image || "未設定"}
-- NG表現: ${inputData.brand?.ng_expressions || "特になし"}
+- 販売商品: ${inputData.product_name || inputData.product?.menu_name || "未設定"}
+- 価格帯/メニュー: ${inputData.price_menu || inputData.product?.price_normal || "未設定"}
+- ターゲット層: ${targetAudience}
+- ターゲットの悩み: ${painPoints}
+- ブランドの強み (USP): ${usp}
+- 目指すゴール/イメージ: ${brandImage}
+- NG表現: ${ngExpressions}
 
 ## 執筆ルール（絶対遵守）
 1. **「未設定」の自動補完**: 上記の変数が「未設定」や「一般層」などの抽象的な値の場合、指定された「業種」と「地域」から論理的に考えられる「具体的な悩み」や「魅力」を勝手に想像して文章に盛り込むこと。
