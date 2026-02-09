@@ -1,0 +1,13 @@
+/*
+Theme Name: WINQER Media
+Theme URI: https://sumatoko.com
+Author: WINQER
+Description: Hybrid SEO Theme for WINQER. Features a high-fidelity LP front-page and integrated blog system with Tailwind Typography.
+Version: 2.0.0
+*/
+
+/* Reset & Base handled by Tailwind CDN */
+body {
+    margin: 0;
+    padding: 0;
+}

@@ -263,13 +263,13 @@ export function StrategyView({ isAdmin = false }: StrategyViewProps) {
                     </CardHeader>
                     <CardContent className="grid gap-4">
                         <div className="grid gap-2">
-                            <Label>Q1. 今回の集客で一番増やしたいのはどれですか？（1つ）</Label>
+                            <Label>Q1. 今回の集客・販売で一番増やしたいのはどれですか？（1つ）</Label>
                             <Select value={formData.goal.main_objective} onValueChange={(val) => handleInputChange('goal', 'main_objective', val)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="選択してください" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="来店・予約数">来店・予約数</SelectItem>
+                                    <SelectItem value="来店・予約・購入数">来店・予約・購入数</SelectItem>
                                     <SelectItem value="問い合わせ">問い合わせ</SelectItem>
                                     <SelectItem value="とりあえず認知（今回は不要）">とりあえず認知（今回は不要）</SelectItem>
                                 </SelectContent>
@@ -296,13 +296,13 @@ export function StrategyView({ isAdmin = false }: StrategyViewProps) {
                 {/* 2. Product */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>2. 商品・サービス（事実だけ）</CardTitle>
+                        <CardTitle>2. 商品・サービス・メニュー（事実だけ）</CardTitle>
                     </CardHeader>
                     <CardContent className="grid gap-4">
                         <div className="grid gap-2">
-                            <Label>Q3. 今回、特に案内したいメニューは何ですか？</Label>
+                            <Label>Q3. 今回、特に売り出したい商品・サービスは何ですか？</Label>
                             <Input
-                                placeholder="例：プレミアムフェイシャル"
+                                placeholder="例：プレミアムフェイシャル、季節限定ランチ、春の入会キャンペーン"
                                 value={formData.product.menu_name}
                                 onChange={(e) => handleInputChange('product', 'menu_name', e.target.value)}
                             />
@@ -332,9 +332,10 @@ export function StrategyView({ isAdmin = false }: StrategyViewProps) {
                                     <SelectValue placeholder="選択してください" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="来店">来店</SelectItem>
+                                    <SelectItem value="店舗・対面">店舗・対面</SelectItem>
                                     <SelectItem value="オンライン">オンライン</SelectItem>
-                                    <SelectItem value="その他">その他</SelectItem>
+                                    <SelectItem value="物販・EC">物販・EC</SelectItem>
+                                    <SelectItem value="デリバリー・テイクアウト">デリバリー・テイクアウト</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -346,7 +347,7 @@ export function StrategyView({ isAdmin = false }: StrategyViewProps) {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="単発利用が多い">単発利用が多い</SelectItem>
-                                    <SelectItem value="継続利用が多い">継続利用が多い</SelectItem>
+                                    <SelectItem value="リピート・継続型">リピート・継続型</SelectItem>
                                     <SelectItem value="どちらも同じくらい">どちらも同じくらい</SelectItem>
                                 </SelectContent>
                             </Select>
@@ -361,17 +362,17 @@ export function StrategyView({ isAdmin = false }: StrategyViewProps) {
                     </CardHeader>
                     <CardContent className="grid gap-4">
                         <div className="grid gap-2">
-                            <Label>Q7. 月に新規で対応できる最大人数は何人ですか？</Label>
+                            <Label>Q7. 月に対応できる新規顧客（または販売数）の上限は？</Label>
                             <Input
-                                placeholder="例：10"
+                                placeholder="例：10名、50個、制限なし"
                                 value={formData.constraints.max_capacity}
                                 onChange={(e) => handleInputChange('constraints', 'max_capacity', e.target.value)}
                             />
                         </div>
                         <div className="grid gap-2">
-                            <Label>Q8. 対応できない条件があれば選んでください（複数可）</Label>
+                            <Label>Q8. サービスの提供において、お断りせざるを得ない条件はありますか？（複数可）</Label>
                             <div className="flex flex-wrap gap-2">
-                                {['男性', '妊娠中', '生理中', '飲酒後'].map((item) => (
+                                {['未成年', '男性', '子供連れ', 'ペット同伴', '泥酔状態'].map((item) => (
                                     <Button
                                         key={item}
                                         variant={formData.constraints.ng_conditions.includes(item) ? "default" : "outline"}
@@ -384,7 +385,7 @@ export function StrategyView({ isAdmin = false }: StrategyViewProps) {
                             </div>
                         </div>
                         <div className="grid gap-2">
-                            <Label>Q9. 正直、集めたくないお客様のタイプはありますか？</Label>
+                            <Label>Q9. 正直、あまり対応したくないお客様のタイプはありますか？</Label>
                             <Input
                                 placeholder="例：安さ目的、無断キャンセルが多い など"
                                 value={formData.constraints.unwanted_customer_types}
@@ -401,23 +402,23 @@ export function StrategyView({ isAdmin = false }: StrategyViewProps) {
                     </CardHeader>
                     <CardContent className="grid gap-4">
                         <div className="grid gap-2">
-                            <Label>Q10. 初めての方からよく聞かれる質問は何ですか？（最大3つ）</Label>
+                            <Label>Q10. 初めてのお客様からよくある質問は？（最大3つ）</Label>
                             <Textarea
-                                placeholder="・痛くないですか？&#13;&#10;・時間はどれくらいかかりますか？"
+                                placeholder="・痛くないですか？&#13;&#10;・初心者でも大丈夫ですか？&#13;&#10;・日持ちはしますか？"
                                 value={formData.customer_voice.frequent_questions}
                                 onChange={(e) => handleInputChange('customer_voice', 'frequent_questions', e.target.value)}
                             />
                         </div>
                         <div className="grid gap-2">
-                            <Label>Q11. 来店前によく不安に思われていることは何ですか？</Label>
+                            <Label>Q11. 購入・利用前にお客様が不安に感じていそうなことは？</Label>
                             <Textarea
-                                placeholder="例：熱そう／恥ずかしい／効果が分からない"
+                                placeholder="例：自分に合うか不安／高そう／効果があるか分からない"
                                 value={formData.customer_voice.pre_visit_anxieties}
                                 onChange={(e) => handleInputChange('customer_voice', 'pre_visit_anxieties', e.target.value)}
                             />
                         </div>
                         <div className="grid gap-2">
-                            <Label>Q12. 実際に来店された決め手になった理由は何ですか？</Label>
+                            <Label>Q12. 実際に選んでくれた決め手になった理由は何ですか？</Label>
                             <Textarea
                                 placeholder="例：家から近い、口コミが良い"
                                 value={formData.customer_voice.deciding_factors}
@@ -425,7 +426,7 @@ export function StrategyView({ isAdmin = false }: StrategyViewProps) {
                             />
                         </div>
                         <div className="grid gap-2">
-                            <Label>Q13. 断られるときに多い理由はどれですか？</Label>
+                            <Label>Q13. 購入・利用に至らなかった主な理由は何ですか？</Label>
                             <Select value={formData.customer_voice.refusal_reasons} onValueChange={(val) => handleInputChange('customer_voice', 'refusal_reasons', val)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="選択してください" />
@@ -451,7 +452,7 @@ export function StrategyView({ isAdmin = false }: StrategyViewProps) {
                         <div className="grid gap-2">
                             <Label>Q14. 比較されやすい相手はどれですか？（複数可）</Label>
                             <div className="flex flex-wrap gap-2">
-                                {['大手サロン', '格安店', '他サービス（岩盤浴・整体など）'].map((item) => (
+                                {['大手チェーン', '格安店', 'ネット通販', '代替サービス'].map((item) => (
                                     <Button
                                         key={item}
                                         variant={formData.comparison.competitors.includes(item) ? "default" : "outline"}
@@ -481,15 +482,16 @@ export function StrategyView({ isAdmin = false }: StrategyViewProps) {
                     </CardHeader>
                     <CardContent className="grid gap-4">
                         <div className="grid gap-2">
-                            <Label>Q16. 広告や発信に使えそうな素材はありますか？</Label>
+                            <Label>Q16. 広告・販促に使えそうな素材・強みはありますか？</Label>
                             <Select value={formData.assets.available_assets} onValueChange={(val) => handleInputChange('assets', 'available_assets', val)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="選択してください" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="お客様の声">お客様の声</SelectItem>
-                                    <SelectItem value="施術写真・動画">施術写真・動画</SelectItem>
-                                    <SelectItem value="顔出しOK">顔出しOK</SelectItem>
+                                    <SelectItem value="商品・サービスの写真/動画">商品・サービスの写真/動画</SelectItem>
+                                    <SelectItem value="実績データ">実績データ</SelectItem>
+                                    <SelectItem value="顔出しOK">スタッフの顔写真・顔出しOK</SelectItem>
                                     <SelectItem value="特にない">特にない</SelectItem>
                                 </SelectContent>
                             </Select>

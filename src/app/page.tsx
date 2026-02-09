@@ -58,7 +58,7 @@ function HeroSection() {
       <div className="container px-4 md:px-6">
         <div className="flex flex-col items-center space-y-4 text-center">
           <div className="rounded-full border bg-secondary px-4 py-1.5 text-sm font-medium text-secondary-foreground">
-            ✨ 店舗の強みを自動分析 × インスタ投稿生成
+            ✨ ビジネスの強みを自動分析 × インスタ投稿生成
           </div>
           <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none bg-clip-text text-transparent bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 dark:from-pink-400 dark:via-purple-400 dark:to-indigo-400 pb-2">
             AIが「SWOT分析」から<br className="md:hidden" />
@@ -66,7 +66,7 @@ function HeroSection() {
           </h1>
           <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
             もう、投稿内容に悩む必要はありません。<br />
-            店舗の強み（Strengths）や機会（Opportunities）をAIが自動抽出し、<br className="hidden md:inline" />
+            あなたのビジネスの強み（Strengths）や機会（Opportunities）をAIが自動抽出し、<br className="hidden md:inline" />
             集客につながる魅力的な文章を一瞬で生成します。
           </p>
           <div className="space-x-4 pt-4">
@@ -116,7 +116,7 @@ function FeaturesSection() {
   const features = [
     {
       title: "高度なSWOT分析",
-      description: "店舗のレビューや競合情報をAIが分析。「強み・弱み・機会・脅威」を明確化し、戦略の土台を作ります。",
+      description: "あなたのビジネスや競合情報をAIが分析。「強み・弱み・機会・脅威」を明確化し、戦略の土台を作ります。",
       icon: Target,
       color: "text-blue-600",
     },
@@ -134,7 +134,7 @@ function FeaturesSection() {
     },
     {
       title: "一貫性のあるブランディング",
-      description: "AIが店舗のトーン＆マナーを学習。担当者が変わっても、常に一貫したクオリティの発信が可能です。",
+      description: "AIがあなたのブランドのトーン＆マナーを学習。担当者が変わっても、常に一貫したクオリティの発信が可能です。",
       icon: CheckCircle2,
       color: "text-pink-600",
     },
@@ -190,7 +190,7 @@ function FAQSection() {
     },
     {
       question: "どのような業種に対応していますか？",
-      answer: "飲食店、美容室、小売店など、実店舗を持つあらゆる業種に対応しています。店舗の特徴に合わせてAIが文脈を理解します。"
+      answer: "飲食店、美容室、小売店などの実店舗はもちろん、ECサイト、オンラインサービス、お教室など、あらゆる中小規模ビジネスに対応しています。"
     },
     {
       question: "専門的なマーケティング知識は必要ですか？",
@@ -248,7 +248,7 @@ function CTASection() {
     <section className="py-24 bg-primary text-primary-foreground">
       <div className="container px-4 md:px-6 text-center">
         <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl mb-6">
-          あなたの店舗経営を、もっと自由に。
+          あなたのビジネスを、もっと自由に。
         </h2>
         <p className="mx-auto max-w-[600px] text-primary-foreground/80 md:text-xl mb-10">
           まずは無料のアカウント作成から。<br />
@@ -282,7 +282,7 @@ function Footer() {
               <span className="text-lg font-bold">WINQER</span>
             </div>
             <p className="text-sm text-gray-500 leading-relaxed">
-              店舗経営のための<br />
+              中小規模ビジネスのための<br />
               オールインワン・プラットフォーム
             </p>
           </div>

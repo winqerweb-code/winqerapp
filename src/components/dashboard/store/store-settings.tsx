@@ -19,6 +19,9 @@ interface StoreSettingsProps {
     setInitialBudget: (value: string) => void
     industry: string
     setIndustry: (value: string) => void
+    openaiApiKey: string
+    setOpenaiApiKey: (value: string) => void
+    isSystemKeyAvailable?: boolean
     onSave: () => void
     loading: boolean
 }
@@ -37,6 +40,9 @@ export function StoreSettings({
     setInitialBudget,
     industry,
     setIndustry,
+    openaiApiKey,
+    setOpenaiApiKey,
+    isSystemKeyAvailable,
     onSave,
     loading,
 }: StoreSettingsProps) {
@@ -103,6 +109,28 @@ export function StoreSettings({
                             onChange={(e) => setInitialBudget(e.target.value)}
                         />
                     </div>
+                </div>
+                <div className="space-y-2 pt-4 border-t">
+                    <Label htmlFor="openaiApiKey">OpenAI API Key</Label>
+                    <Input
+                        id="openaiApiKey"
+                        type="password"
+                        value={openaiApiKey}
+                        onChange={(e) => setOpenaiApiKey(e.target.value)}
+                        placeholder="sk-..."
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        {openaiApiKey ? (
+                            <span className="text-green-600 font-medium">※個別のAPIキーが設定されています。</span>
+                        ) : isSystemKeyAvailable ? (
+                            <span className="text-blue-600 font-bold">※システム共通のAPIキーが適用されています（利用可能）。</span>
+                        ) : (
+                            <span>
+                                ※AI分析機能を利用するには、APIキーが必要です。<br />
+                                まだお持ちでない方は <a href="https://platform.openai.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">OpenAI Platform</a> から取得してください。
+                            </span>
+                        )}
+                    </p>
                 </div>
                 <div className="pt-4">
                     <Button onClick={onSave} disabled={loading} className="w-full">

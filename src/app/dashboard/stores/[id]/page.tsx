@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 
-import { getStore, updateStore } from "@/app/actions/store"
+import { getStore, updateStore, getStoreRole } from "@/app/actions/store"
 import { useToast } from "@/components/ui/use-toast"
 import { Store } from "@/types/store"
 import { useStore } from "@/contexts/store-context"
 import { getStrategy, getStrategyForGeneration } from "@/app/actions/strategy"
 import { getAdAccountsAction, getCampaignsAction } from "@/app/actions/meta-actions"
-import { checkAdminStatusAction } from "@/app/actions/provider-actions"
+import { checkAdminStatusAction, checkSystemKeyAvailabilityAction } from "@/app/actions/provider-actions"
 
 // Components
 import { StoreHeader } from "@/components/dashboard/store/store-header"
@@ -33,11 +33,14 @@ export default function StorePage() {
     const [strategyData, setStrategyData] = useState<any>(null)
     const [loading, setLoading] = useState(false)
     const [isAdmin, setIsAdmin] = useState(false)
+    const [userRole, setUserRole] = useState<string | null>(null)
+    const [isSystemKeyAvailable, setIsSystemKeyAvailable] = useState(false)
 
     // Form State (for Settings Tab)
     const [name, setName] = useState("")
     const [address, setAddress] = useState("")
     const [phone, setPhone] = useState("")
+    const [openaiApiKey, setOpenaiApiKey] = useState("")
 
     // Integration State
     const [metaCampaignId, setMetaCampaignId] = useState<string>("none")
@@ -60,6 +63,10 @@ export default function StorePage() {
         const checkAdmin = async () => {
             const res = await checkAdminStatusAction()
             setIsAdmin(res.isAdmin)
+
+            // Check System Key Availability
+            const keyRes = await checkSystemKeyAvailabilityAction()
+            setIsSystemKeyAvailable(keyRes.available)
         }
         checkAdmin()
 
@@ -130,6 +137,7 @@ export default function StorePage() {
                     setName(storeResult.store.name || "")
                     setAddress(storeResult.store.address || "")
                     setPhone(storeResult.store.phone || "")
+                    setOpenaiApiKey(storeResult.store.openai_api_key || "") // Hydrate API Key
                     setMetaCampaignId(storeResult.store.meta_campaign_id || "none")
                     setGa4PropertyId(storeResult.store.ga4_property_id || "")
                     setGbpLocationId(storeResult.store.gbp_location_id || "")
@@ -138,6 +146,11 @@ export default function StorePage() {
                     setTargetAudience(storeResult.store.target_audience || "")
                     setInitialBudget(storeResult.store.initial_budget || "")
                     setIndustry(storeResult.store.industry || "")
+
+                    // Fetch Role
+                    getStoreRole(storeId).then(res => {
+                        if (res.success) setUserRole(res.role || null)
+                    })
                 } else {
                     console.error("[StorePage] Store fetch failed:", storeResult.error)
                 }
@@ -180,7 +193,8 @@ export default function StorePage() {
                 cv_event_name: cvEventName,
                 target_audience: targetAudience,
                 initial_budget: initialBudget,
-                industry: industry
+                industry: industry,
+                openai_api_key: openaiApiKey // Save API Key
             })
 
             if (updatedStore.success) {
@@ -219,7 +233,7 @@ export default function StorePage() {
                         <Target className="h-4 w-4" />
                         戦略設定
                     </TabsTrigger>
-                    {isAdmin && (
+                    {(isAdmin || userRole === 'STORE_ADMIN') && (
                         <TabsTrigger value="settings" className="flex items-center gap-2">
                             <Settings className="h-4 w-4" />
                             事業設定
@@ -242,7 +256,7 @@ export default function StorePage() {
                 </TabsContent>
 
                 {/* Tab 3: Settings (Original Layout) */}
-                {isAdmin && (
+                {(isAdmin || userRole === 'STORE_ADMIN') && (
                     <TabsContent value="settings" className="space-y-4">
                         <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
                             {/* Left Column: Settings */}
@@ -262,6 +276,9 @@ export default function StorePage() {
                                         setInitialBudget={setInitialBudget}
                                         industry={industry}
                                         setIndustry={setIndustry}
+                                        openaiApiKey={openaiApiKey}
+                                        setOpenaiApiKey={setOpenaiApiKey}
+                                        isSystemKeyAvailable={isSystemKeyAvailable}
                                         onSave={handleSave}
                                         loading={loading}
                                     />

@@ -1,0 +1,13 @@
+/*
+Theme Name: WINQER LP
+Theme URI: https://winqer.com
+Author: WINQER
+Description: Standalone LP theme for WINQER service introduction.
+Version: 1.0.0
+*/
+
+/* Reset & Base is handled by Tailwind CDN */
+body {
+    margin: 0;
+    padding: 0;
+}

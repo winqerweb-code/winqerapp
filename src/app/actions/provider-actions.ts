@@ -588,3 +588,83 @@ export async function deleteUserAction(targetUserId: string) {
         return { success: false, error: error.message || "予期せぬエラーが発生しました" }
     }
 }
+
+// --- System Settings (Global Config) ---
+
+export async function getSystemSettingsAction() {
+    const supabase = await getSupabase()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user || !(await isProviderAdmin(user.id))) {
+        return { success: false, error: "権限がありません" }
+    }
+
+    const { data, error } = await supabase
+        .from('system_settings')
+        .select('*')
+
+    if (error) {
+        // If table doesn't exist yet, return empty but no error
+        if (error.code === '42P01') {
+            return { success: true, settings: {} }
+        }
+        return { success: false, error: error.message }
+    }
+
+    // Convert array to object
+    const settings: Record<string, string> = {}
+    data?.forEach((item: any) => {
+        settings[item.key] = item.value
+    })
+
+    return { success: true, settings }
+}
+
+export async function updateSystemSettingsAction(settings: Record<string, string>) {
+    const supabase = await getSupabase()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user || !(await isProviderAdmin(user.id))) {
+        return { success: false, error: "権限がありません" }
+    }
+
+    const updates = Object.entries(settings).map(([key, value]) => ({
+        key,
+        value,
+        updated_at: new Date().toISOString()
+    }))
+
+    const { error } = await supabase
+        .from('system_settings')
+        .upsert(updates)
+
+    if (error) {
+        return { success: false, error: error.message }
+    }
+
+    return { success: true }
+}
+
+export async function checkSystemKeyAvailabilityAction() {
+    const supabase = await getSupabase()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { available: false }
+
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!serviceKey) return { available: false }
+
+    const adminSupabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        serviceKey,
+        { auth: { persistSession: false } }
+    )
+
+    const { data } = await adminSupabase
+        .from('system_settings')
+        .select('key')
+        .eq('key', 'openai_api_key')
+        .single()
+
+    return { available: !!data }
+}

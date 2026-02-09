@@ -30,7 +30,9 @@ import {
     removeProviderAdminAction,
     adminResetUserPasswordAction,
     getAllUsersAction,
-    deleteUserAction
+    deleteUserAction,
+    getSystemSettingsAction,
+    updateSystemSettingsAction
 } from "@/app/actions/provider-actions"
 import { getStoreGoogleDataAction } from "@/app/actions/google-data"
 import { getStores } from "@/app/actions/store"
@@ -895,6 +897,7 @@ export default function AdminDashboard() {
                             <TabsTrigger value="store-management">店舗管理</TabsTrigger>
                             <TabsTrigger value="user-management">ユーザー管理</TabsTrigger>
                             <TabsTrigger value="system-admins">システム管理者</TabsTrigger>
+                            <TabsTrigger value="system-settings">システム設定</TabsTrigger>
                         </TabsList>
                         <TabsContent value="store-management">
                             <div className="grid grid-cols-12 gap-6 pt-4">
@@ -1163,9 +1166,80 @@ export default function AdminDashboard() {
                         <TabsContent value="system-admins" className="pt-4">
                             <ProviderAdminsManager />
                         </TabsContent>
+                        <TabsContent value="system-settings" className="pt-4">
+                            <SystemSettingsManager />
+                        </TabsContent>
                     </Tabs>
                 </div>
             </div >
         </div>
+    )
+}
+
+function SystemSettingsManager() {
+    const { toast } = useToast()
+    const [settings, setSettings] = useState<Record<string, string>>({})
+    const [loading, setLoading] = useState(false)
+    const [openaiKey, setOpenaiKey] = useState("")
+
+    useEffect(() => {
+        loadSettings()
+    }, [])
+
+    const loadSettings = async () => {
+        setLoading(true)
+        const res = await getSystemSettingsAction()
+        if (res.success && res.settings) {
+            setSettings(res.settings)
+            setOpenaiKey(res.settings.openai_api_key || "")
+        }
+        setLoading(false)
+    }
+
+    const handleSave = async () => {
+        setLoading(true)
+        const res = await updateSystemSettingsAction({
+            openai_api_key: openaiKey
+        })
+
+        if (res.success) {
+            toast({ title: "システム設定を保存しました" })
+            loadSettings()
+        } else {
+            toast({ title: "保存エラー", description: res.error, variant: "destructive" })
+        }
+        setLoading(false)
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>システム設定 (Global Config)</CardTitle>
+                <CardDescription>
+                    全ユーザー・全店舗に適用される共通設定です。<br />
+                    各店舗で個別に設定がない場合、ここの設定が使用されます。
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="space-y-2">
+                    <Label htmlFor="global-openai-key">Global OpenAI API Key</Label>
+                    <div className="flex gap-2">
+                        <Input
+                            id="global-openai-key"
+                            type="password"
+                            value={openaiKey}
+                            onChange={(e) => setOpenaiKey(e.target.value)}
+                            placeholder="sk-..."
+                        />
+                        <Button onClick={handleSave} disabled={loading}>
+                            {loading ? "保存中..." : "保存"}
+                        </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                        ※ここに設定すると、APIキーを持っていない店舗でもAI機能が利用可能になります。
+                    </p>
+                </div>
+            </CardContent>
+        </Card>
     )
 }

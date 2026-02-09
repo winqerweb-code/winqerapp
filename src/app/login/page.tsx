@@ -78,11 +78,11 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <div className="flex min-h-screen items-center justify-center bg-gray-100">
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
-                    <div className="flex justify-center mb-4">
-                        <div className="relative h-32 w-32">
+                    <div className="flex justify-center mb-6">
+                        <div className="relative h-32 w-32 mx-auto">
                             <Image
                                 src="/images/logo.png"
                                 alt="WINQER"

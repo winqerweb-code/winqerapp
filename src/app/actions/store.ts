@@ -203,3 +203,15 @@ export async function createStoreSelfService(data: Omit<Store, 'id' | 'created_a
 
     return { success: true, store: createdStore as Store }
 }
+
+export async function getStoreRole(storeId: string) {
+    const supabase = await getSupabase()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { success: false, error: 'Unauthorized' }
+    }
+
+    const { role } = await verifyStoreAccess(user.id, storeId)
+    return { success: true, role }
+}
