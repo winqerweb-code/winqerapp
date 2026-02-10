@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -30,11 +30,7 @@ export function SecureApiKeyInput({
     const [inputValue, setInputValue] = useState('')
     const [isEditing, setIsEditing] = useState(false)
 
-    useEffect(() => {
-        loadStatus()
-    }, [])
-
-    const loadStatus = async () => {
+    const loadStatus = useCallback(async () => {
         try {
             const result = await fetchStatus()
             if (result.success && result.data) {
@@ -45,7 +41,11 @@ export function SecureApiKeyInput({
         } finally {
             setLoading(false)
         }
-    }
+    }, [fetchStatus])
+
+    useEffect(() => {
+        loadStatus()
+    }, [loadStatus])
 
     const handleSave = async () => {
         if (!inputValue.trim()) return
