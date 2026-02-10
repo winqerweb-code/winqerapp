@@ -23,10 +23,10 @@
             <div class="container mx-auto px-4 flex h-16 items-center justify-between">
                 <div class="flex items-center gap-2">
                     <div class="relative h-8 w-8">
-                        <img src="<?php echo get_template_directory_uri(); ?>/images/logo.png" alt="WINQER"
+                        <img src="<?php echo get_template_directory_uri(); ?>/images/logo.png" alt="スマトコ"
                             class="object-contain h-8 w-8" />
                     </div>
-                    <span class="text-xl font-bold tracking-tight">WINQER</span>
+                    <span class="text-xl font-bold tracking-tight">スマトコ</span>
                 </div>
                 <div class="flex items-center gap-4">
                     <a href="https://app.sumatoko.com/" class="text-sm font-medium hover:underline underline-offset-4">
@@ -120,7 +120,7 @@
                 <div class="container mx-auto px-4 md:px-6">
                     <div class="flex flex-col items-center justify-center space-y-4 text-center mb-12">
                         <div class="inline-block rounded-lg bg-pink-100 text-pink-700 px-3 py-1 text-sm">
-                            WINQERだけの機能
+                            スマトコだけの機能
                         </div>
                         <h2 class="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
                             分析と発信を、これひとつで。
@@ -237,7 +237,7 @@
                                 </summary>
                                 <div class="px-4 pb-4 pt-0 text-sm text-gray-500 border-t border-gray-100">
                                     <div class="pt-2">
-                                        Strength（強み）、Weakness（弱み）、Opportunity（機会）、Threat（脅威）の頭文字をとったフレームワークです。WINQERはこれをAIで自動化し、戦略的な投稿作成に活用します。
+                                        Strength（強み）、Weakness（弱み）、Opportunity（機会）、Threat（脅威）の頭文字をとったフレームワークです。スマトコはこれをAIで自動化し、戦略的な投稿作成に活用します。
                                     </div>
                                 </div>
                             </details>
@@ -332,7 +332,7 @@
                     </h2>
                     <p class="mx-auto max-w-[600px] text-gray-300 md:text-xl mb-10">
                         まずは無料のアカウント作成から。<br />
-                        WINQERがビジネスの可能性を広げます。
+                        スマトコがビジネスの可能性を広げます。
                     </p>
                     <a href="https://winqer.com/login"
                         class="inline-flex items-center justify-center rounded-md text-lg font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-secondary text-secondary-foreground hover:bg-secondary/80 h-14 px-8 bg-white text-gray-900 hover:bg-gray-100">
@@ -349,10 +349,10 @@
                     <div class="col-span-2 md:col-span-1">
                         <div class="flex items-center gap-2 mb-4">
                             <div class="relative h-6 w-6">
-                                <img src="<?php echo get_template_directory_uri(); ?>/images/logo.png" alt="WINQER"
+                                <img src="<?php echo get_template_directory_uri(); ?>/images/logo.png" alt="スマトコ"
                                     class="object-contain h-6 w-6" />
                             </div>
-                            <span class="text-lg font-bold">WINQER</span>
+                            <span class="text-lg font-bold">スマトコ</span>
                         </div>
                         <p class="text-sm text-gray-500 leading-relaxed">
                             中小規模ビジネスのための<br />
@@ -378,15 +378,16 @@
                     <div>
                         <h3 class="font-semibold mb-4 text-gray-900">法的情報</h3>
                         <ul class="space-y-2 text-sm text-gray-500">
-                            <li><a href="/terms" class="hover:text-gray-900">利用規約</a></li>
-                            <li><a href="/privacy" class="hover:text-gray-900">プライバシーポリシー</a></li>
+                            <li><a href="<?php echo home_url('/terms'); ?>" class="hover:text-gray-900">利用規約</a></li>
+                            <li><a href="<?php echo home_url('/privacy'); ?>" class="hover:text-gray-900">プライバシーポリシー</a>
+                            </li>
                             <li><a href="#" class="hover:text-gray-900">特定商取引法に基づく表記</a></li>
                         </ul>
                     </div>
                 </div>
                 <div class="mt-12 pt-8 border-t border-gray-200 text-center text-sm text-gray-500">
                     ©
-                    <?php echo date("Y"); ?> WINQER Inc. All rights reserved.
+                    <?php echo date("Y"); ?> スマトコ Inc. All rights reserved.
                 </div>
             </div>
         </footer>

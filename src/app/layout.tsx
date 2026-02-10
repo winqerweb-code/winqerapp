@@ -7,8 +7,8 @@ import { StoreProvider } from "@/contexts/store-context"
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'WINQER ダッシュボード',
-  description: 'WINQER用マーケティングダッシュボード',
+  title: 'スマトコ ダッシュボード',
+  description: 'スマトコ用マーケティングダッシュボード',
   metadataBase: new URL('https://app.sumatoko.com'),
 }
 

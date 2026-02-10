@@ -85,7 +85,7 @@ export default function LoginPage() {
                         <div className="relative h-32 w-32 mx-auto">
                             <Image
                                 src="/images/logo.png"
-                                alt="WINQER"
+                                alt="スマトコ"
                                 fill
                                 className="object-contain"
                                 priority
