@@ -92,8 +92,8 @@ export default function LoginPage() {
                             />
                         </div>
                     </div>
-                    <CardTitle className="text-2xl mb-2">{isSignUp ? "アカウント作成" : "ログイン"}</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-2xl mb-2 text-black">{isSignUp ? "アカウント作成" : "ログイン"}</CardTitle>
+                    <CardDescription className="text-gray-700 font-medium">
                         {isSignUp
                             ? "メールアドレスとパスワードで登録してください"
                             : "メールアドレスまたはGoogleアカウントでログインしてください"}
@@ -109,6 +109,7 @@ export default function LoginPage() {
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
                                 disabled={loading}
+                                className="border-gray-400 text-black placeholder:text-gray-500"
                             />
                             <Input
                                 type="password"
@@ -118,6 +119,7 @@ export default function LoginPage() {
                                 required
                                 disabled={loading}
                                 minLength={6}
+                                className="border-gray-400 text-black placeholder:text-gray-500"
                             />
                         </div>
                         <Button
@@ -135,17 +137,17 @@ export default function LoginPage() {
 
                     <div className="relative mb-4">
                         <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t" />
+                            <span className="w-full border-t border-gray-400" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-background px-2 text-muted-foreground">または</span>
+                            <span className="bg-white px-2 text-black font-medium">または</span>
                         </div>
                     </div>
 
                     <div className="flex flex-col gap-4">
                         <Button
                             variant="outline"
-                            className="w-full h-12 text-base"
+                            className="w-full h-12 text-base border-gray-400 text-black hover:bg-gray-50"
                             onClick={handleGoogleLogin}
                             disabled={loading}
                         >
@@ -175,7 +177,7 @@ export default function LoginPage() {
                         </Button>
                     </div>
                     <div className="mt-4 text-center text-sm">
-                        <span className="text-muted-foreground">
+                        <span className="text-gray-700">
                             {isSignUp ? "すでにアカウントをお持ちですか？" : "アカウントをお持ちでないですか？"}
                         </span>
                         <Button

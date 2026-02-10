@@ -1,0 +1,12 @@
+/*
+Theme Name: WINQER LP Theme
+Theme URI: https://winqer.com
+Author: WINQER
+Description: Landing page theme for WINQER service
+Version: 1.0
+*/
+
+/* Custom styles not covered by Tailwind can go here */
+body {
+    font-family: 'Inter', sans-serif;
+}
