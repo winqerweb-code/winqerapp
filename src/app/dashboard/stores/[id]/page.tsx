@@ -17,6 +17,7 @@ import { StoreSettings } from "@/components/dashboard/store/store-settings"
 import { Integrations } from "@/components/dashboard/store/integrations"
 import { PostGeneration } from "@/components/dashboard/store/post-generation"
 import { StrategyView } from "@/components/dashboard/store/strategy-view"
+import { SubscriptionCard } from "@/components/dashboard/store/subscription-card"
 
 // UI
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -222,6 +223,13 @@ export default function StorePage() {
     return (
         <div className="flex-1 space-y-4 p-6 pt-6 bg-background min-h-screen">
             <StoreHeader name={name} storeId={storeId} isAdmin={isAdmin} />
+
+            {/* Subscription Status Card */}
+            {store && (
+                <div className="mb-6">
+                    <SubscriptionCard store={store} />
+                </div>
+            )}
 
             <Tabs defaultValue="post-gen" className="space-y-4">
                 <TabsList className="grid w-full grid-cols-1 md:grid-cols-3 lg:w-[400px] h-auto">

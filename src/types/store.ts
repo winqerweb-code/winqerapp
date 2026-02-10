@@ -31,5 +31,13 @@ export type Store = {
     initial_budget?: string
     industry?: string
 
+    // Subscription & Plan
+    plan_type?: 'free' | 'pro'
+    usage_count?: number
+    total_usage_count?: number
+    last_usage_date?: string
+    stripe_customer_id?: string
+    stripe_subscription_id?: string
+
     created_at: string
 }

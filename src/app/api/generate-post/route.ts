@@ -43,6 +43,42 @@ export async function POST(req: NextRequest) {
 
         const store = storeResult.store
 
+        // --- Usage Limit Check ---
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const isPro = store.plan_type === 'pro';
+        const MAX_FREE_USAGE = 1;
+        const MAX_PRO_FAILY_USAGE = 5;
+
+        // Reset daily usage if new day (for Pro)
+        const lastUsageDate = store.last_usage_date ? new Date(store.last_usage_date).toISOString().split('T')[0] : null;
+        if (isPro && lastUsageDate !== today) {
+            // We should reset usage_count somehow. 
+            // Ideally we do this before checking, or just treat current usage_count as 0 if date mismatch.
+            // For atomicity, we'll handle the reset during the update implementation below, 
+            // but for checking here:
+            store.usage_count = 0;
+        }
+
+        if (isPro) {
+            if ((store.usage_count || 0) >= MAX_PRO_FAILY_USAGE) {
+                return NextResponse.json({
+                    success: false,
+                    error: "1日の投稿生成回数上限（5回）に達しました。明日またお試しください。",
+                    isLimitReached: true
+                }, { status: 403 })
+            }
+        } else {
+            // Free Plan
+            if ((store.total_usage_count || 0) >= MAX_FREE_USAGE) {
+                return NextResponse.json({
+                    success: false,
+                    error: "無料トライアル（1回のみ）が終了しました。有料プランへのアップグレードをご検討ください。",
+                    isLimitReached: true,
+                    isFreeTrialEnded: true
+                }, { status: 403 })
+            }
+        }
+
         // 2. Fetch Strategy (Inlined for robustness)
         let strategyData: any = null
         try {
@@ -237,6 +273,50 @@ JSONのキーは必ず "captions" という配列を含めてください。
         } catch (e) {
             console.error("JSON Parse Error:", e)
             throw new Error("Failed to parse AI response")
+        }
+
+        // Success - Update Usage Counts
+        try {
+            const adminSupabase = getSupabaseAdmin()
+            if (adminSupabase) {
+                const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+                // If Pro and date changed, usage_count should have reset to 0 effectively, so new count is 1.
+                // If date same, usage_count + 1.
+                // However, SQL update is safer.
+                // Logic:
+                // If Pro: 
+                //   If last_usage_date != today: usage_count = 1, last_usage_date = today
+                //   Else: usage_count = usage_count + 1
+                // If Free:
+                //   total_usage_count = total_usage_count + 1
+
+                // We can do a smart update:
+                const updates: any = {
+                    total_usage_count: (store.total_usage_count || 0) + 1
+                };
+
+                if (isPro) {
+                    if (lastUsageDate !== todayStr) {
+                        updates.usage_count = 1;
+                        updates.last_usage_date = todayStr;
+                    } else {
+                        updates.usage_count = (store.usage_count || 0) + 1;
+                    }
+                } else {
+                    // For Free, we also track usage_count mostly for consistency or if they upgrade later?
+                    // Let's just track total. But maybe update last_usage too.
+                    updates.last_usage_date = todayStr;
+                }
+
+                await adminSupabase
+                    .from('stores')
+                    .update(updates)
+                    .eq('id', storeId);
+            }
+        } catch (updateError) {
+            console.error("Failed to update usage count:", updateError);
+            // Don't fail the request, just log it.
         }
 
         return NextResponse.json({ success: true, captions })
