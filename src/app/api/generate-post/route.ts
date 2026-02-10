@@ -89,6 +89,12 @@ export async function POST(req: NextRequest) {
             ? apiKey
             : (store.openai_api_key || "")
 
+        console.log("Debug API Key Resolution:", {
+            bodyKeyProvided: !!apiKey,
+            storeKeyProvided: !!store.openai_api_key,
+            effectiveKeyLength: effectiveApiKey?.length || 0
+        })
+
         if (!effectiveApiKey) {
             const adminSupabase = getSupabaseAdmin()
             if (adminSupabase) {
@@ -100,11 +106,13 @@ export async function POST(req: NextRequest) {
 
                 if (adminStore?.openai_api_key) {
                     effectiveApiKey = adminStore.openai_api_key
+                    console.log("Resolved API Key from Admin Client")
                 }
             }
         }
 
         if (!effectiveApiKey) {
+            console.error("Failed to resolve API Key")
             return NextResponse.json({ success: false, error: "OpenAI API Key is not configured." }, { status: 500 })
         }
 
