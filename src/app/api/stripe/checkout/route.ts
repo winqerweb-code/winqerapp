@@ -2,11 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStore } from "@/app/actions/store";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-    // apiVersion: '2023-10-16', // Removing to avoid type mismatch with v20+ SDK
-});
-
 export async function POST(req: NextRequest) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+        return NextResponse.json(
+            { error: "Stripe Secret Key is missing" },
+            { status: 500 }
+        );
+    }
+
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+        // apiVersion: '2023-10-16', // Removing to avoid type mismatch with v20+ SDK
+    });
+
     try {
         const body = await req.json();
         const { storeId, priceId } = body;
