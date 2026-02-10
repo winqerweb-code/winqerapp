@@ -98,6 +98,7 @@ export async function POST(req: NextRequest) {
         if (!effectiveApiKey) {
             const adminSupabase = getSupabaseAdmin()
             if (adminSupabase) {
+                // 1. Try fetching from Store (Admin Client)
                 const { data: adminStore } = await adminSupabase
                     .from('stores')
                     .select('openai_api_key')
@@ -106,7 +107,21 @@ export async function POST(req: NextRequest) {
 
                 if (adminStore?.openai_api_key) {
                     effectiveApiKey = adminStore.openai_api_key
-                    console.log("Resolved API Key from Admin Client")
+                    console.log("Resolved API Key from Admin Client (Store Level)")
+                }
+
+                // 2. Fallback: Try fetching from System Settings
+                if (!effectiveApiKey) {
+                    const { data: systemSetting } = await adminSupabase
+                        .from('system_settings')
+                        .select('value')
+                        .eq('key', 'openai_api_key')
+                        .single()
+
+                    if (systemSetting?.value) {
+                        effectiveApiKey = systemSetting.value
+                        console.log("Resolved API Key from System Settings")
+                    }
                 }
             }
         }
